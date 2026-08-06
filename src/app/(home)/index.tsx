@@ -1,5 +1,6 @@
 import { Show, useUser } from '@clerk/expo'
 import { useClerk } from '@clerk/expo'
+import { UserButton, UserProfileView } from '@clerk/expo/native'
 import { Link } from 'expo-router'
 import { Text, View, Pressable, StyleSheet } from 'react-native'
 
@@ -14,15 +15,16 @@ export default function Page() {
         <Link href="/(auth)/sign-in">
           <Text>Sign in</Text>
         </Link>
-        <Link href="/(auth)/sign-up">
-          <Text>Sign up</Text>
-        </Link>
       </Show>
       <Show when="signed-in">
         <Text>Hello {user?.id}</Text>
         <Pressable style={styles.button} onPress={() => signOut()}>
           <Text style={styles.buttonText}>Sign out</Text>
         </Pressable>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <UserButton />
+        <UserProfileView style= {{flex: 1}}/>
+      </View>
       </Show>
     </View>
   )
