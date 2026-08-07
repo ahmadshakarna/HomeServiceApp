@@ -10,7 +10,7 @@ export default function Page() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome!</Text>
+      <Text style={styles.title}>Craft</Text>
       <Show when="signed-out">
         <Link href="/(auth)/sign-in">
           <Text>Sign in</Text>
@@ -22,8 +22,6 @@ export default function Page() {
           <Text style={styles.buttonText}>Sign out</Text>
         </Pressable>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <UserButton />
-        <UserProfileView style= {{flex: 1}}/>
       </View>
       </Show>
     </View>

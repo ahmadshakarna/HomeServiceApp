@@ -20,11 +20,11 @@ export default function SignInScreen() {
 
       <View className="px-6 pt-4">
         <Text className="text-center text-5xl font-extrabold tracking-tight text-primary-foreground uppercase font-mono dark:text-foreground">
-          Grocify
+          Craft
         </Text>
 
         <Text className="mt-1 text-center text-[14px] text-primary-foreground/80 dark:text-foreground/75">
-          Plan smarter. Shop happier.
+          Skilled help for every home.
         </Text>
 
         <View className="mt-6 rounded-[30px] border border-white/20 bg-white/10 p-3">
@@ -44,7 +44,7 @@ export default function SignInScreen() {
         </View>
 
         <Text className="mt-2 text-center text-sm leading-6 text-muted-foreground">
-          Choose a social provider and jump right into your personalized grocery experience.
+          Choose a social provider and finish your Home services.
         </Text>
 
         <View className="mt-6">
