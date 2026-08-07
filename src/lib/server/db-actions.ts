@@ -1,4 +1,4 @@
-// حذف اضافة تعديل 
+// حذف اضافة تعديل
 // عشان نتعامل مع قاعدة البيانات، بنستخدم Drizzle ORM. Drizzle ORM هو مكتبة TypeScript/JavaScript بتسهل التعامل مع قواعد البيانات بطريقة آمنة وفعالة. في هذا الملف، بنعرف مجموعة من الدوال اللي بتتعامل مع جدول groceryItems في قاعدة البيانات.
 import { desc, eq } from "drizzle-orm";
 import { db } from "./db/client";
