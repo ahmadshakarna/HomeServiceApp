@@ -27,32 +27,49 @@ export default function TabsLayout() {
   }
 
   return (
-    <NativeTabs tintColor={tabTintColor}>
+     <NativeTabs tintColor={tabTintColor}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>List</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{
-            default: "list.bullet.clipboard",
-            selected: "list.bullet.clipboard.fill",
+            default: "house",
+            selected: "house.fill",
           }}
-          md="list"
+          md="home"
         />
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="planner">
+      <NativeTabs.Trigger name="categories">
         <NativeTabs.Trigger.Icon
-          sf={{ default: "plus.circle", selected: "plus.circle.fill" }}
-          md="add"
+          sf={{
+            default: "square.grid.2x2",
+            selected: "square.grid.2x2.fill",
+          }}
+          md="category"
         />
-        <NativeTabs.Trigger.Label>Planner</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Categories</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="insights">
+      <NativeTabs.Trigger name="bookings">
         <NativeTabs.Trigger.Icon
-          sf={{ default: "chart.bar", selected: "chart.bar.fill" }}
-          md="analytics"
+          sf={{
+            default: "calendar",
+            selected: "calendar.circle.fill",
+          }}
+          md="event"
         />
-        <NativeTabs.Trigger.Label>Insights</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Bookings</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Icon
+          sf={{
+            default: "person",
+            selected: "person.fill",
+          }}
+          md="person"
+        />
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

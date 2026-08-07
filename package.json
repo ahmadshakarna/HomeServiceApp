@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "db:push": "drizzle-kit push",
-    "seed:grocery": "node ./scripts/seed-grocery.cjs"
+    "seed:grocery": "node ./scripts/seed-grocery.cjs",
+    "seed:categories": "node --env-file=.env scripts/seed-categories.js",
+    "seed:services": "node --env-file=.env scripts/seed-services.js"
   },
   "dependencies": {
     "@clerk/expo": "^3.1.2",
