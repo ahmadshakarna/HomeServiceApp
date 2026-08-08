@@ -12,7 +12,9 @@
     "db:push": "drizzle-kit push",
     "seed:grocery": "node ./scripts/seed-grocery.cjs",
     "seed:categories": "node --env-file=.env scripts/seed-categories.js",
-    "seed:services": "node --env-file=.env scripts/seed-services.js"
+    "seed:services": "node --env-file=.env scripts/seed-services.js",
+    "seed:availability": "node --env-file=.env scripts/seed-provider-availability.js",
+    "seed:providers": "node --env-file=.env scripts/seed-providers.js"  
   },
   "dependencies": {
     "@clerk/expo": "^3.1.2",
