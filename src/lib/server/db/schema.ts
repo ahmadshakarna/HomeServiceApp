@@ -123,6 +123,12 @@ export const serviceProviders = pgTable("service_providers", {
     .notNull()
     .default(true),
 
+  approvalStatus: text("approval_status")
+  .notNull()
+  .default("draft"),
+
+   rejectionReason: text("rejection_reason"),   
+
   createdAt: timestamp("created_at", {
     withTimezone: true,
   })
@@ -134,6 +140,8 @@ export const serviceProviders = pgTable("service_providers", {
   })
     .defaultNow()
     .notNull(),
+
+   
 });
 
 
@@ -242,3 +250,60 @@ export const providerAvailability = pgTable(
     ),
   })
 );
+
+// Bookings table
+export const bookings = pgTable("bookings", {
+  id: uuid("id")
+    .defaultRandom()
+    .primaryKey(),
+
+  // Clerk user id للعميل
+  customerId: text("customer_id")
+    .notNull(),
+
+  providerId: uuid("provider_id")
+    .notNull()
+    .references(() => serviceProviders.id, {
+      onDelete: "cascade",
+    }),
+
+  serviceId: uuid("service_id")
+    .notNull()
+    .references(() => services.id, {
+      onDelete: "cascade",
+    }),
+
+  // السعر وقت الحجز
+  // نخزنه حتى لو مقدم الخدمة غيّر السعر لاحقًا
+  priceAgorot: integer("price_agorot")
+    .notNull(),
+
+  bookingDate: text("booking_date")
+    .notNull(),
+
+  startTime: time("start_time")
+    .notNull(),
+
+  // العنوان حاليًا كنص
+  // لاحقًا سنعمل addresses table
+  address: text("address")
+    .notNull(),
+
+  notes: text("notes"),
+
+  status: text("status")
+    .notNull()
+    .default("pending"),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp("updated_at", {
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
+});

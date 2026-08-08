@@ -1,7 +1,8 @@
 import { useClerk, useUser } from "@clerk/expo";
 import { Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 export default function ProfileScreen() {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -66,6 +67,38 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+       {/* Provider */}
+
+        <Pressable
+          onPress={() => {
+            router.push("/become-provider");
+          }}
+           className="mt-6 flex-row items-center rounded-2xl bg-[#EFF6FF] p-5 active:opacity-80"
+        >
+          <View className="h-12 w-12 items-center justify-center rounded-xl bg-white">
+            <Ionicons
+              name="briefcase-outline"
+              size={24}
+              color="#2563EB"
+            />
+          </View>
+
+          <View className="ml-4 flex-1">
+            <Text className="text-base font-bold text-[#0F172A]">
+              Become a Provider
+            </Text>
+
+            <Text className="mt-1 text-sm text-[#64748B]">
+              Offer services and receive bookings
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={21}
+            color="#2563EB"
+          />
+        </Pressable>
 
         {/* Logout */}
         <View className="mt-auto pb-6">

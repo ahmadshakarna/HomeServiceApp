@@ -14,9 +14,11 @@
     "seed:categories": "node --env-file=.env scripts/seed-categories.js",
     "seed:services": "node --env-file=.env scripts/seed-services.js",
     "seed:availability": "node --env-file=.env scripts/seed-provider-availability.js",
-    "seed:providers": "node --env-file=.env scripts/seed-providers.js"  
+    "seed:providers": "node --env-file=.env scripts/seed-providers.js",
+    "approve:providers": "node --env-file=.env scripts/approve-existing-providers.js"
   },
   "dependencies": {
+    "@clerk/backend": "^3.16.1",
     "@clerk/expo": "^3.1.2",
     "@neondatabase/serverless": "^1.1.0",
     "@react-navigation/bottom-tabs": "^7.7.3",

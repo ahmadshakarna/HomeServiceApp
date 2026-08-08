@@ -439,13 +439,27 @@ export default function ProviderDetailsScreen() {
         </View>
 
         {/* Book Button */}
-        <Pressable
-          className="mt-8 items-center rounded-2xl bg-[#2563EB] py-4"
-        >
-          <Text className="text-base font-bold text-white">
-            Book Provider
-          </Text>
-        </Pressable>
+         <Pressable
+  onPress={() => {
+    if (!provider?.id) {
+      return;
+    }
+
+    router.push({
+      pathname:
+        "/booking/[providerId]",
+      params: {
+        providerId:
+          provider.id,
+      },
+    });
+  }}
+  className="mt-8 items-center rounded-2xl bg-[#2563EB] py-4"
+>
+  <Text className="text-base font-bold text-white">
+    Book Provider
+  </Text>
+</Pressable>
       </ScrollView>
     </SafeAreaView>
   );

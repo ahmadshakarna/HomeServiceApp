@@ -48,23 +48,28 @@ export const getProvidersByService = async (
     )
 
     .where(
-      and(
-        eq(
-          providerServices.serviceId,
-          serviceId
-        ),
+  and(
+    eq(
+      providerServices.serviceId,
+      serviceId
+    ),
 
-        eq(
-          providerServices.isAvailable,
-          true
-        ),
+    eq(
+      providerServices.isAvailable,
+      true
+    ),
 
-        eq(
-          serviceProviders.isActive,
-          true
-        )
-      )
+    eq(
+      serviceProviders.isActive,
+      true
+    ),
+
+    eq(
+      serviceProviders.approvalStatus,
+      "approved"
     )
+  )
+)
 
     .orderBy(
       asc(serviceProviders.fullName)
@@ -86,18 +91,23 @@ export const getProviderById = async (
     .from(serviceProviders)
 
     .where(
-      and(
-        eq(
-          serviceProviders.id,
-          providerId
-        ),
+  and(
+    eq(
+      serviceProviders.id,
+      providerId
+    ),
 
-        eq(
-          serviceProviders.isActive,
-          true
-        )
-      )
+    eq(
+      serviceProviders.isActive,
+      true
+    ),
+
+    eq(
+      serviceProviders.approvalStatus,
+      "approved"
     )
+  )
+)
 
     .limit(1);
 
