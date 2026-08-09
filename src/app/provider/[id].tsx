@@ -1,384 +1,955 @@
-import { useProviderDetailsStore } from "@/store/provider-details-store";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  useProviderDetailsStore,
+} from "@/store/provider-details-store";
+
+import {
+  Ionicons,
+} from "@expo/vector-icons";
+
 import {
   router,
   useLocalSearchParams,
 } from "expo-router";
-import React, { useEffect } from "react";
+
+import React, {
+  useEffect,
+} from "react";
+
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
+  useTranslation,
+} from "react-i18next";
+
 
 export default function ProviderDetailsScreen() {
-  const params = useLocalSearchParams<{
-    id: string | string[];
-  }>();
+  const {
+    t,
+    i18n,
+  } = useTranslation();
 
-  const providerId = Array.isArray(params.id)
-    ? params.id[0]
-    : params.id;
 
-  const provider = useProviderDetailsStore(
-    (state) => state.provider
-  );
+  // ========================================
+  // LANGUAGE
+  // ========================================
 
-  const services = useProviderDetailsStore(
-    (state) => state.services
-  );
+  const isArabic =
+    i18n.language === "ar";
 
-  const availability = useProviderDetailsStore(
-    (state) => state.availability
-  );
 
-  const isLoading = useProviderDetailsStore(
-    (state) => state.isLoading
-  );
+  const textDirection = {
+    textAlign:
+      isArabic
+        ? ("right" as const)
+        : ("left" as const),
+  };
 
-  const error = useProviderDetailsStore(
-    (state) => state.error
-  );
 
-  const loadProvider = useProviderDetailsStore(
-    (state) => state.loadProvider
-  );
+  // ========================================
+  // ROUTE
+  // ========================================
 
-  const clearProvider = useProviderDetailsStore(
-    (state) => state.clearProvider
-  );
+  const params =
+    useLocalSearchParams<{
+      id:
+        | string
+        | string[];
+    }>();
+
+
+  const providerId =
+    Array.isArray(
+      params.id
+    )
+      ? params.id[0]
+      : params.id;
+
+
+  // ========================================
+  // STORE
+  // ========================================
+
+  const provider =
+    useProviderDetailsStore(
+      (state) =>
+        state.provider
+    );
+
+  const services =
+    useProviderDetailsStore(
+      (state) =>
+        state.services
+    );
+
+  const availability =
+    useProviderDetailsStore(
+      (state) =>
+        state.availability
+    );
+
+  const isLoading =
+    useProviderDetailsStore(
+      (state) =>
+        state.isLoading
+    );
+
+  const error =
+    useProviderDetailsStore(
+      (state) =>
+        state.error
+    );
+
+  const loadProvider =
+    useProviderDetailsStore(
+      (state) =>
+        state.loadProvider
+    );
+
+  const clearProvider =
+    useProviderDetailsStore(
+      (state) =>
+        state.clearProvider
+    );
+
+
+  // ========================================
+  // LOAD
+  // ========================================
 
   useEffect(() => {
     if (!providerId) {
       return;
     }
 
-    loadProvider(providerId);
+    loadProvider(
+      providerId
+    );
+
 
     return () => {
       clearProvider();
     };
+
   }, [
     providerId,
     loadProvider,
     clearProvider,
   ]);
 
+
   // ========================================
-  // Days
+  // SERVICE TRANSLATION
   // ========================================
 
-  const dayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+  const getServiceName = (
+    item: {
+      service: {
+        slug: string;
+        name: string;
+      };
+    }
+  ) => {
+    return t(
+      `db.services.${item.service.slug}.name`,
+      {
+        defaultValue:
+          item.service.name,
+      }
+    );
+  };
 
-  // PostgreSQL يرجع الوقت مثل 09:00:00
-  // نحن نعرض فقط 09:00
+
+  // ========================================
+  // TIME
+  // ========================================
+
   const formatTime = (
-    time: string | null
+    time:
+      | string
+      | null
   ) => {
     if (!time) {
       return "";
     }
 
-    return time.slice(0, 5);
+    return time.slice(
+      0,
+      5
+    );
   };
 
+
   // ========================================
-  // Loading
+  // DAY TRANSLATION
   // ========================================
 
-  if (isLoading && !provider) {
+  const getDayName = (
+    dayOfWeek: number
+  ) => {
+    const days = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+
+    const day =
+      days[
+        dayOfWeek
+      ];
+
+    if (!day) {
+      return "";
+    }
+
+    return t(
+      `weekdays.${day}`
+    );
+  };
+
+
+  // ========================================
+  // LOADING
+  // ========================================
+
+  if (
+    isLoading &&
+    !provider
+  ) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#F8FAFC]">
+
         <ActivityIndicator
           size="large"
           color="#2563EB"
         />
 
+
         <Text className="mt-3 text-[#64748B]">
-          Loading provider...
+          {t(
+            "providerProfile.loading"
+          )}
         </Text>
+
       </SafeAreaView>
     );
   }
 
+
   // ========================================
-  // Error
+  // ERROR
   // ========================================
 
-  if (error && !provider) {
+  if (
+    error &&
+    !provider
+  ) {
     return (
       <SafeAreaView className="flex-1 bg-[#F8FAFC] px-5">
+
         <Pressable
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
           className="mt-3 h-11 w-11 items-center justify-center rounded-full bg-white"
+          style={{
+            alignSelf:
+              isArabic
+                ? "flex-end"
+                : "flex-start",
+          }}
         >
+
           <Ionicons
-            name="arrow-back"
+            name={
+              isArabic
+                ? "arrow-forward"
+                : "arrow-back"
+            }
             size={22}
             color="#0F172A"
           />
+
         </Pressable>
 
+
         <View className="flex-1 items-center justify-center pb-20">
+
           <View className="h-16 w-16 items-center justify-center rounded-full bg-red-50">
+
             <Ionicons
               name="alert-circle-outline"
               size={32}
               color="#EF4444"
             />
+
           </View>
 
-          <Text className="mt-4 text-lg font-bold text-[#0F172A]">
-            Couldn't load provider
+
+          <Text
+            className="mt-4 text-lg font-bold text-[#0F172A]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "providerProfile.loadError"
+            )}
           </Text>
 
-          <Text className="mt-2 text-center text-sm text-[#64748B]">
-            Something went wrong while loading this provider.
+
+          <Text
+            className="mt-2 text-sm leading-5 text-[#64748B]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "providerProfile.loadErrorDescription"
+            )}
           </Text>
+
 
           <Pressable
             onPress={() => {
-              if (providerId) {
-                loadProvider(providerId);
+              if (
+                providerId
+              ) {
+                loadProvider(
+                  providerId
+                );
               }
             }}
-            className="mt-5 rounded-xl bg-[#2563EB] px-6 py-3"
+            className="mt-5 rounded-xl bg-[#2563EB] px-6 py-3 active:opacity-80"
           >
+
             <Text className="font-semibold text-white">
-              Try Again
+              {t(
+                "common.retry"
+              )}
             </Text>
+
           </Pressable>
+
         </View>
+
       </SafeAreaView>
     );
   }
 
+
   // ========================================
-  // Screen
+  // SCREEN
   // ========================================
 
   return (
     <SafeAreaView
       className="flex-1 bg-[#F8FAFC]"
-      edges={["top"]}
+      edges={[
+        "top",
+      ]}
     >
+
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={
+          false
+        }
         contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingBottom: 50,
+          paddingHorizontal:
+            20,
+
+          paddingBottom:
+            50,
         }}
       >
-        {/* Header */}
-        <View className="mt-3 flex-row items-center">
+
+        {/* ==================================
+            HEADER
+        ================================== */}
+
+        <View
+          className="mt-3"
+          style={{
+            flexDirection:
+              isArabic
+                ? "row-reverse"
+                : "row",
+
+            alignItems:
+              "center",
+          }}
+        >
+
           <Pressable
-            onPress={() => router.back()}
+            onPress={() =>
+              router.back()
+            }
             className="h-11 w-11 items-center justify-center rounded-full bg-white"
           >
+
             <Ionicons
-              name="arrow-back"
+              name={
+                isArabic
+                  ? "arrow-forward"
+                  : "arrow-back"
+              }
               size={22}
               color="#0F172A"
             />
+
           </Pressable>
 
-          <Text className="ml-4 text-xl font-bold text-[#0F172A]">
-            Provider Profile
+
+          <Text
+            className="flex-1 text-xl font-bold text-[#0F172A]"
+            style={{
+              marginStart:
+                16,
+
+              ...textDirection,
+            }}
+          >
+            {t(
+              "providerProfile.title"
+            )}
           </Text>
+
         </View>
 
-        {/* Provider Card */}
-        <View className="mt-6 items-center rounded-[28px] bg-white p-6">
-          <View className="h-24 w-24 items-center justify-center rounded-full bg-[#EFF6FF]">
-            <Ionicons
-              name="person"
-              size={44}
-              color="#2563EB"
-            />
-          </View>
 
-          <View className="mt-4 flex-row items-center">
+        {/* ==================================
+            PROVIDER CARD
+        ================================== */}
+
+        <View className="mt-6 items-center rounded-[28px] bg-white p-6">
+
+          {/* PROFILE IMAGE */}
+
+          {provider
+            ?.profileImage ? (
+
+            <Image
+              source={{
+                uri:
+                  provider.profileImage,
+              }}
+              className="h-24 w-24 rounded-full"
+            />
+
+          ) : (
+
+            <View className="h-24 w-24 items-center justify-center rounded-full bg-[#EFF6FF]">
+
+              <Ionicons
+                name="person"
+                size={44}
+                color="#2563EB"
+              />
+
+            </View>
+
+          )}
+
+
+          {/* NAME + VERIFIED */}
+
+          <View
+            className="mt-4"
+            style={{
+              flexDirection:
+                isArabic
+                  ? "row-reverse"
+                  : "row",
+
+              alignItems:
+                "center",
+            }}
+          >
+
             <Text className="text-2xl font-bold text-[#0F172A]">
-              {provider?.fullName}
+              {
+                provider
+                  ?.fullName
+              }
             </Text>
 
-            {provider?.isVerified ? (
+
+            {provider
+              ?.isVerified ? (
+
               <Ionicons
                 name="checkmark-circle"
                 size={22}
                 color="#2563EB"
                 style={{
-                  marginLeft: 7,
+                  marginStart:
+                    7,
                 }}
               />
+
             ) : null}
+
           </View>
 
+
+          {/* CITY */}
+
           {provider?.city ? (
-            <View className="mt-2 flex-row items-center">
+
+            <View
+              className="mt-2"
+              style={{
+                flexDirection:
+                  isArabic
+                    ? "row-reverse"
+                    : "row",
+
+                alignItems:
+                  "center",
+              }}
+            >
+
               <Ionicons
                 name="location-outline"
                 size={17}
                 color="#64748B"
               />
 
-              <Text className="ml-1 text-[#64748B]">
-                {provider.city}
+
+              <Text
+                className="text-[#64748B]"
+                style={{
+                  marginStart:
+                    4,
+                }}
+              >
+                {
+                  provider.city
+                }
               </Text>
+
             </View>
+
           ) : null}
 
-          {/* Stats */}
-          <View className="mt-5 flex-row">
+
+          {/* ==================================
+              STATS
+          ================================== */}
+
+          <View
+            className="mt-5"
+            style={{
+              flexDirection:
+                isArabic
+                  ? "row-reverse"
+                  : "row",
+            }}
+          >
+
+            {/* EXPERIENCE */}
+
             <View className="items-center px-5">
+
               <Text className="text-xl font-bold text-[#2563EB]">
-                {provider?.experienceYears ?? 0}
+                {
+                  provider
+                    ?.experienceYears ??
+                  0
+                }
               </Text>
 
-              <Text className="mt-1 text-xs text-[#64748B]">
-                Years Experience
+
+              <Text
+                className="mt-1 text-xs text-[#64748B]"
+                style={{
+                  textAlign:
+                    "center",
+                }}
+              >
+                {t(
+                  "providerProfile.yearsExperience"
+                )}
               </Text>
+
             </View>
+
 
             <View className="h-12 w-[1px] bg-[#E2E8F0]" />
 
+
+            {/* SERVICES */}
+
             <View className="items-center px-5">
+
               <Text className="text-xl font-bold text-[#2563EB]">
-                {services.length}
+                {
+                  services.length
+                }
               </Text>
+
 
               <Text className="mt-1 text-xs text-[#64748B]">
-                Services
+                {t(
+                  "providerProfile.services"
+                )}
               </Text>
+
             </View>
+
           </View>
+
         </View>
 
-        {/* About */}
+
+        {/* ==================================
+            ABOUT
+        ================================== */}
+
         <View className="mt-7">
-          <Text className="text-lg font-bold text-[#0F172A]">
-            About
+
+          <Text
+            className="text-lg font-bold text-[#0F172A]"
+            style={
+              textDirection
+            }
+          >
+            {t(
+              "providerProfile.about"
+            )}
           </Text>
+
 
           <View className="mt-3 rounded-2xl bg-white p-5">
-            <Text className="leading-6 text-[#64748B]">
+
+            <Text
+              className="leading-6 text-[#64748B]"
+              style={
+                textDirection
+              }
+            >
               {provider?.bio ||
-                "Professional home service provider."}
+                t(
+                  "providerProfile.defaultBio"
+                )}
             </Text>
+
           </View>
+
         </View>
 
-        {/* Services */}
+
+        {/* ==================================
+            SERVICES
+        ================================== */}
+
         <View className="mt-7">
-          <Text className="text-lg font-bold text-[#0F172A]">
-            Services
+
+          <Text
+            className="text-lg font-bold text-[#0F172A]"
+            style={
+              textDirection
+            }
+          >
+            {t(
+              "providerProfile.services"
+            )}
           </Text>
 
-          {services.map((item) => {
-            const price =
-              item.priceAgorot / 100;
 
-            return (
-              <View
-                key={item.providerServiceId}
-                className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white p-4"
+          {services.length ===
+          0 ? (
+
+            <View className="mt-3 items-center rounded-2xl bg-white p-5">
+
+              <Ionicons
+                name="construct-outline"
+                size={28}
+                color="#94A3B8"
+              />
+
+
+              <Text
+                className="mt-2 text-sm text-[#64748B]"
+                style={{
+                  textAlign:
+                    "center",
+                }}
               >
-                <View className="flex-row items-center">
-                  <View className="h-12 w-12 items-center justify-center rounded-xl bg-[#EFF6FF]">
-                    <Ionicons
-                      name={
-                        (item.service.icon ||
-                          "construct-outline") as keyof typeof Ionicons.glyphMap
-                      }
-                      size={23}
-                      color="#2563EB"
-                    />
-                  </View>
+                {t(
+                  "providerProfile.noServices"
+                )}
+              </Text>
 
-                  <View className="ml-3 flex-1">
-                    <Text className="font-bold text-[#0F172A]">
-                      {item.service.name}
+            </View>
+
+          ) : null}
+
+
+          {services.map(
+            (item) => {
+              const price =
+                item.priceAgorot /
+                100;
+
+
+              return (
+                <View
+                  key={
+                    item.providerServiceId
+                  }
+                  className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white p-4"
+                >
+
+                  <View
+                    style={{
+                      flexDirection:
+                        isArabic
+                          ? "row-reverse"
+                          : "row",
+
+                      alignItems:
+                        "center",
+                    }}
+                  >
+
+                    {/* ICON */}
+
+                    <View className="h-12 w-12 items-center justify-center rounded-xl bg-[#EFF6FF]">
+
+                      <Ionicons
+                        name={
+                          (item
+                            .service
+                            .icon ||
+                            "construct-outline") as keyof typeof Ionicons.glyphMap
+                        }
+                        size={23}
+                        color="#2563EB"
+                      />
+
+                    </View>
+
+
+                    {/* SERVICE */}
+
+                    <View
+                      className="flex-1"
+                      style={{
+                        marginStart:
+                          12,
+                      }}
+                    >
+
+                      <Text
+                        className="font-bold text-[#0F172A]"
+                        style={
+                          textDirection
+                        }
+                      >
+                        {
+                          getServiceName(
+                            item
+                          )
+                        }
+                      </Text>
+
+
+                      <Text
+                        className="mt-1 text-sm text-[#64748B]"
+                        style={
+                          textDirection
+                        }
+                      >
+                        {t(
+                          "providerProfile.startingPrice"
+                        )}
+                      </Text>
+
+                    </View>
+
+
+                    {/* PRICE */}
+
+                    <Text
+                      className="text-lg font-bold text-[#2563EB]"
+                      style={{
+                        marginStart:
+                          8,
+                      }}
+                    >
+                      {price} ₪
                     </Text>
 
-                    <Text className="mt-1 text-sm text-[#64748B]">
-                      Starting price
-                    </Text>
                   </View>
 
-                  <Text className="text-lg font-bold text-[#2563EB]">
-                    {price} ₪
-                  </Text>
                 </View>
-              </View>
-            );
-          })}
+              );
+            }
+          )}
+
         </View>
 
-        {/* Working Hours */}
+
+        {/* ==================================
+            WORKING HOURS
+        ================================== */}
+
         <View className="mt-7">
-          <View className="flex-row items-center">
+
+          <View
+            style={{
+              flexDirection:
+                isArabic
+                  ? "row-reverse"
+                  : "row",
+
+              alignItems:
+                "center",
+            }}
+          >
+
             <View className="h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
+
               <Ionicons
                 name="time-outline"
                 size={22}
                 color="#2563EB"
               />
+
             </View>
 
-            <View className="ml-3">
-              <Text className="text-lg font-bold text-[#0F172A]">
-                Working Hours
+
+            <View
+              className="flex-1"
+              style={{
+                marginStart:
+                  12,
+              }}
+            >
+
+              <Text
+                className="text-lg font-bold text-[#0F172A]"
+                style={
+                  textDirection
+                }
+              >
+                {t(
+                  "providerProfile.workingHours"
+                )}
               </Text>
 
-              <Text className="mt-1 text-sm text-[#64748B]">
-                Provider weekly availability
+
+              <Text
+                className="mt-1 text-sm text-[#64748B]"
+                style={
+                  textDirection
+                }
+              >
+                {t(
+                  "providerProfile.weeklyAvailability"
+                )}
               </Text>
+
             </View>
+
           </View>
 
-          {/* No availability */}
-          {availability.length === 0 ? (
+
+          {/* ==================================
+              NO AVAILABILITY
+          ================================== */}
+
+          {availability.length ===
+          0 ? (
+
             <View className="mt-4 items-center rounded-2xl border border-[#E2E8F0] bg-white p-5">
+
               <Ionicons
                 name="calendar-outline"
                 size={28}
                 color="#94A3B8"
               />
 
+
               <Text className="mt-2 text-sm text-[#64748B]">
-                No working hours available
+                {t(
+                  "providerProfile.noWorkingHours"
+                )}
               </Text>
+
             </View>
+
           ) : (
+
             <View className="mt-4 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white">
+
               {availability.map(
-                (day, index) => {
+                (
+                  day,
+                  index
+                ) => {
                   const isLast =
                     index ===
-                    availability.length - 1;
+                    availability.length -
+                      1;
+
 
                   return (
                     <View
-                      key={day.id}
-                      className={`flex-row items-center justify-between px-4 py-4 ${
+                      key={
+                        day.id
+                      }
+                      className={`px-4 py-4 ${
                         !isLast
                           ? "border-b border-[#E2E8F0]"
                           : ""
                       }`}
+                      style={{
+                        flexDirection:
+                          isArabic
+                            ? "row-reverse"
+                            : "row",
+
+                        alignItems:
+                          "center",
+
+                        justifyContent:
+                          "space-between",
+                      }}
                     >
-                      {/* Day */}
-                      <View className="flex-row items-center">
+
+                      {/* DAY */}
+
+                      <View
+                        className="flex-1"
+                        style={{
+                          flexDirection:
+                            isArabic
+                              ? "row-reverse"
+                              : "row",
+
+                          alignItems:
+                            "center",
+                        }}
+                      >
+
                         <View
                           className={`h-9 w-9 items-center justify-center rounded-lg ${
                             day.isAvailable
@@ -386,6 +957,7 @@ export default function ProviderDetailsScreen() {
                               : "bg-[#F1F5F9]"
                           }`}
                         >
+
                           <Ionicons
                             name={
                               day.isAvailable
@@ -399,21 +971,48 @@ export default function ProviderDetailsScreen() {
                                 : "#94A3B8"
                             }
                           />
+
                         </View>
 
-                        <Text className="ml-3 font-semibold text-[#0F172A]">
+
+                        <Text
+                          className="font-semibold text-[#0F172A]"
+                          style={{
+                            marginStart:
+                              12,
+
+                            ...textDirection,
+                          }}
+                        >
                           {
-                            dayNames[
+                            getDayName(
                               day.dayOfWeek
-                            ]
+                            )
                           }
                         </Text>
+
                       </View>
 
-                      {/* Time */}
+
+                      {/* TIME */}
+
                       {day.isAvailable ? (
-                        <View className="rounded-lg bg-green-50 px-3 py-2">
-                          <Text className="text-sm font-semibold text-green-700">
+
+                        <View
+                          className="rounded-lg bg-green-50 px-3 py-2"
+                          style={{
+                            marginStart:
+                              8,
+                          }}
+                        >
+
+                          <Text
+                            className="text-sm font-semibold text-green-700"
+                            style={{
+                              writingDirection:
+                                "ltr",
+                            }}
+                          >
                             {formatTime(
                               day.startTime
                             )}{" "}
@@ -422,45 +1021,104 @@ export default function ProviderDetailsScreen() {
                               day.endTime
                             )}
                           </Text>
+
                         </View>
+
                       ) : (
-                        <View className="rounded-lg bg-[#F1F5F9] px-3 py-2">
+
+                        <View
+                          className="rounded-lg bg-[#F1F5F9] px-3 py-2"
+                          style={{
+                            marginStart:
+                              8,
+                          }}
+                        >
+
                           <Text className="text-sm font-semibold text-[#94A3B8]">
-                            Closed
+                            {t(
+                              "providerProfile.closed"
+                            )}
                           </Text>
+
                         </View>
+
                       )}
+
                     </View>
                   );
                 }
               )}
+
             </View>
+
           )}
+
         </View>
 
-        {/* Book Button */}
-         <Pressable
-  onPress={() => {
-    if (!provider?.id) {
-      return;
-    }
 
-    router.push({
-      pathname:
-        "/booking/[providerId]",
-      params: {
-        providerId:
-          provider.id,
-      },
-    });
-  }}
-  className="mt-8 items-center rounded-2xl bg-[#2563EB] py-4"
->
-  <Text className="text-base font-bold text-white">
-    Book Provider
-  </Text>
-</Pressable>
+        {/* ==================================
+            BOOK BUTTON
+        ================================== */}
+
+        <Pressable
+          onPress={() => {
+            if (
+              !provider?.id
+            ) {
+              return;
+            }
+
+            router.push({
+              pathname:
+                "/booking/[providerId]",
+
+              params: {
+                providerId:
+                  provider.id,
+              },
+            });
+          }}
+          className="mt-8 items-center rounded-2xl bg-[#2563EB] py-4 active:opacity-80"
+        >
+
+          <View
+            style={{
+              flexDirection:
+                isArabic
+                  ? "row-reverse"
+                  : "row",
+
+              alignItems:
+                "center",
+
+              gap:
+                8,
+            }}
+          >
+
+            <Text className="text-base font-bold text-white">
+              {t(
+                "providerProfile.bookProvider"
+              )}
+            </Text>
+
+
+            <Ionicons
+              name={
+                isArabic
+                  ? "arrow-back"
+                  : "arrow-forward"
+              }
+              size={18}
+              color="white"
+            />
+
+          </View>
+
+        </Pressable>
+
       </ScrollView>
+
     </SafeAreaView>
   );
 }
