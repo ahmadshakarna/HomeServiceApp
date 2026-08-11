@@ -32,6 +32,10 @@ import {
   SafeAreaView,
 } from "react-native-safe-area-context";
 
+import {
+  useTranslation,
+} from "react-i18next";
+
 
 // ========================================
 // TYPES
@@ -73,13 +77,23 @@ type Application = {
 
 type ProviderService = {
   id: string;
-  serviceId: string;
-  serviceName: string;
+
+  serviceId:
+    string;
+
+  serviceName:
+    string;
+
+  serviceSlug:
+    string;
 
   categoryId:
     string;
 
   categoryName:
+    string;
+
+  categorySlug:
     string;
 
   priceAgorot:
@@ -119,58 +133,93 @@ type DetailsResponse = {
 };
 
 
-const DAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
-
 // ========================================
 // SCREEN
 // ========================================
 
 export default function AdminProviderDetailsScreen() {
+  const {
+    t,
+    i18n,
+  } = useTranslation();
+
+
+  const isArabic =
+    (
+      i18n.resolvedLanguage ||
+      i18n.language
+    ).startsWith("ar");
+
+
+  const textDirection = {
+    textAlign:
+      isArabic
+        ? ("right" as const)
+        : ("left" as const),
+  };
+
+
+  const rowDirection = {
+    flexDirection:
+      isArabic
+        ? ("row-reverse" as const)
+        : ("row" as const),
+  };
+
 
   const [
-  decisionLoading,
-  setDecisionLoading,
-] = useState<
-  "approve" |
-  "reject" |
-  null
->(null);
+    decisionLoading,
+    setDecisionLoading,
+  ] = useState<
+    | "approve"
+    | "reject"
+    | null
+  >(null);
 
-const [
-  showRejectBox,
-  setShowRejectBox,
-] = useState(false);
 
-const [
-  rejectionReason,
-  setRejectionReason,
-] = useState("");
+  const [
+    showRejectBox,
+    setShowRejectBox,
+  ] = useState(
+    false
+  );
 
-  const {
-    id,
-  } =
+
+  const [
+    rejectionReason,
+    setRejectionReason,
+  ] = useState(
+    ""
+  );
+
+
+  const params =
     useLocalSearchParams<{
-      id: string;
+      id:
+        | string
+        | string[];
     }>();
+
+
+  const id =
+    Array.isArray(
+      params.id
+    )
+      ? params.id[0]
+      : params.id;
+
 
   const {
     getToken,
     isLoaded,
   } = useAuth();
 
+
   const loadedId =
     useRef<
       string | null
     >(null);
+
 
   const [
     details,
@@ -180,10 +229,14 @@ const [
       DetailsResponse | null
     >(null);
 
+
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
+
 
   const [
     error,
@@ -192,6 +245,138 @@ const [
     useState<
       string | null
     >(null);
+
+
+  // ========================================
+  // HELPERS
+  // ========================================
+
+  const getDayKey = (
+    dayOfWeek: number
+  ) => {
+    const keys = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+
+    return keys[
+      dayOfWeek
+    ];
+  };
+
+
+  const getApplicationStatus =
+    (
+      status: string
+    ) => {
+      switch (status) {
+        case "pending":
+          return t(
+            "admin.statusPending"
+          );
+
+        case "approved":
+          return t(
+            "admin.statusApproved"
+          );
+
+        case "rejected":
+          return t(
+            "admin.statusRejected"
+          );
+
+        case "draft":
+          return t(
+            "admin.statusDraft"
+          );
+
+        default:
+          return status;
+      }
+    };
+
+
+  const localizeError =
+    useCallback(
+      (
+        message:
+          | string
+          | null
+          | undefined,
+        fallbackKey:
+          string
+      ) => {
+        const normalized =
+          message
+            ?.trim()
+            .toLowerCase();
+
+
+        if (
+          normalized ===
+          "unauthorized" ||
+          normalized ===
+          "authentication required"
+        ) {
+          return t(
+            "admin.errors.authenticationRequired"
+          );
+        }
+
+
+        if (
+          normalized ===
+          "forbidden"
+        ) {
+          return t(
+            "admin.errors.forbidden"
+          );
+        }
+
+
+        if (
+          normalized ===
+          "provider application not found"
+        ) {
+          return t(
+            "admin.errors.applicationNotFound"
+          );
+        }
+
+
+        if (
+          normalized ===
+          "rejection reason is required" ||
+          normalized ===
+          "please enter a rejection reason."
+        ) {
+          return t(
+            "admin.errors.rejectionReasonRequired"
+          );
+        }
+
+
+        if (
+          normalized ===
+          "application not found or no longer pending"
+        ) {
+          return t(
+            "admin.errors.noLongerPending"
+          );
+        }
+
+
+        return t(
+          fallbackKey
+        );
+      },
+      [t]
+    );
 
 
   // ========================================
@@ -205,6 +390,7 @@ const [
           return;
         }
 
+
         try {
           setLoading(
             true
@@ -214,14 +400,17 @@ const [
             null
           );
 
+
           const token =
             await getToken();
+
 
           if (!token) {
             throw new Error(
               "Authentication required"
             );
           }
+
 
           const response =
             await fetch(
@@ -234,8 +423,10 @@ const [
               }
             );
 
+
           const data =
             await response.json();
+
 
           if (!response.ok) {
             throw new Error(
@@ -244,20 +435,25 @@ const [
             );
           }
 
+
           setDetails(
             data
           );
 
-        } catch (error) {
+        } catch (err) {
           console.error(
             "ADMIN PROVIDER DETAILS ERROR:",
-            error
+            err
           );
 
+
           setError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load application"
+            localizeError(
+              err instanceof Error
+                ? err.message
+                : null,
+              "admin.errors.loadApplication"
+            )
           );
 
         } finally {
@@ -269,12 +465,13 @@ const [
       [
         id,
         getToken,
+        localizeError,
       ]
     );
 
 
   // ========================================
-  // INITIAL LOAD ONLY
+  // INITIAL LOAD
   // ========================================
 
   useEffect(() => {
@@ -285,6 +482,7 @@ const [
       return;
     }
 
+
     if (
       loadedId.current ===
       id
@@ -292,8 +490,10 @@ const [
       return;
     }
 
+
     loadedId.current =
       id;
+
 
     loadDetails();
 
@@ -303,192 +503,232 @@ const [
     loadDetails,
   ]);
 
-// ========================================
-// PERFORM ADMIN DECISION
-// ========================================
 
-const performDecision =
-  async (
-    action:
-      | "approve"
-      | "reject"
-  ) => {
-    try {
-      if (!id) {
-        return;
+  // ========================================
+  // PERFORM ADMIN DECISION
+  // ========================================
+
+  const performDecision =
+    async (
+      action:
+        | "approve"
+        | "reject"
+    ) => {
+      try {
+        if (!id) {
+          return;
+        }
+
+
+        if (
+          action === "reject" &&
+          rejectionReason
+            .trim()
+            .length < 3
+        ) {
+          setError(
+            t(
+              "admin.errors.rejectionReasonRequired"
+            )
+          );
+
+          return;
+        }
+
+
+        setDecisionLoading(
+          action
+        );
+
+        setError(
+          null
+        );
+
+
+        const token =
+          await getToken();
+
+
+        if (!token) {
+          throw new Error(
+            "Authentication required"
+          );
+        }
+
+
+        const response =
+          await fetch(
+            `/api/admin/provider-applications/${id}`,
+            {
+              method:
+                "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  action,
+
+                  reason:
+                    action ===
+                    "reject"
+                      ? rejectionReason
+                      : undefined,
+                }),
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              "Failed to update application"
+          );
+        }
+
+
+        router.replace(
+          "/admin-providers"
+        );
+
+      } catch (err) {
+        console.error(
+          "ADMIN DECISION ERROR:",
+          err
+        );
+
+
+        setError(
+          localizeError(
+            err instanceof Error
+              ? err.message
+              : null,
+            "admin.errors.updateApplication"
+          )
+        );
+
+      } finally {
+        setDecisionLoading(
+          null
+        );
       }
+    };
 
+
+  // ========================================
+  // APPROVE CONFIRMATION
+  // ========================================
+
+  const handleApprove =
+    () => {
+      Alert.alert(
+        t(
+          "admin.approve"
+        ),
+
+        t(
+          "admin.approveConfirm"
+        ),
+
+        [
+          {
+            text:
+              t(
+                "common.cancel"
+              ),
+
+            style:
+              "cancel",
+          },
+
+          {
+            text:
+              t(
+                "admin.approveAction"
+              ),
+
+            onPress:
+              () =>
+                performDecision(
+                  "approve"
+                ),
+          },
+        ]
+      );
+    };
+
+
+  // ========================================
+  // REJECT CONFIRMATION
+  // ========================================
+
+  const handleReject =
+    () => {
       if (
-        action === "reject" &&
-        rejectionReason.trim().length <
-          3
+        rejectionReason
+          .trim()
+          .length < 3
       ) {
         setError(
-          "Please enter a rejection reason."
+          t(
+            "admin.errors.rejectionReasonRequired"
+          )
         );
 
         return;
       }
 
-      setDecisionLoading(
-        action
-      );
 
-      setError(null);
+      Alert.alert(
+        t(
+          "admin.reject"
+        ),
 
-      const token =
-        await getToken();
+        t(
+          "admin.rejectConfirm"
+        ),
 
-      if (!token) {
-        throw new Error(
-          "Authentication required"
-        );
-      }
-
-      const response =
-        await fetch(
-          `/api/admin/provider-applications/${id}`,
+        [
           {
-            method: "PATCH",
+            text:
+              t(
+                "common.cancel"
+              ),
 
-            headers: {
-              "Content-Type":
-                "application/json",
+            style:
+              "cancel",
+          },
 
-              Authorization:
-                `Bearer ${token}`,
-            },
+          {
+            text:
+              t(
+                "admin.rejectAction"
+              ),
 
-            body:
-              JSON.stringify({
-                action,
+            style:
+              "destructive",
 
-                reason:
-                  action ===
+            onPress:
+              () =>
+                performDecision(
                   "reject"
-                    ? rejectionReason
-                    : undefined,
-              }),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Failed to update application"
-        );
-      }
-
-      console.log(
-        "ADMIN PROVIDER DECISION:",
-        data.application
+                ),
+          },
+        ]
       );
-
-      router.replace(
-        "/admin-providers"
-      );
-
-    } catch (error) {
-      console.error(
-        "ADMIN DECISION ERROR:",
-        error
-      );
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update application"
-      );
-
-    } finally {
-      setDecisionLoading(
-        null
-      );
-    }
-  };
+    };
 
 
-// ========================================
-// APPROVE CONFIRMATION
-// ========================================
-
-const handleApprove =
-  () => {
-    Alert.alert(
-      "Approve Provider",
-      "Are you sure you want to approve this provider?",
-      [
-        {
-          text:
-            "Cancel",
-
-          style:
-            "cancel",
-        },
-
-        {
-          text:
-            "Approve",
-
-          onPress:
-            () =>
-              performDecision(
-                "approve"
-              ),
-        },
-      ]
-    );
-  };
-
-
-// ========================================
-// REJECT CONFIRMATION
-// ========================================
-
-const handleReject =
-  () => {
-    if (
-      rejectionReason.trim().length <
-      3
-    ) {
-      setError(
-        "Please enter a rejection reason."
-      );
-
-      return;
-    }
-
-    Alert.alert(
-      "Reject Application",
-      "Are you sure you want to reject this application?",
-      [
-        {
-          text:
-            "Cancel",
-
-          style:
-            "cancel",
-        },
-
-        {
-          text:
-            "Reject",
-
-          style:
-            "destructive",
-
-          onPress:
-            () =>
-              performDecision(
-                "reject"
-              ),
-        },
-      ]
-    );
-  };
   // ========================================
   // LOADING
   // ========================================
@@ -502,8 +742,11 @@ const handleReject =
           color="#2563EB"
         />
 
+
         <Text className="mt-3 text-[#64748B]">
-          Loading application...
+          {t(
+            "admin.loadingApplication"
+          )}
         </Text>
 
       </SafeAreaView>
@@ -512,13 +755,10 @@ const handleReject =
 
 
   // ========================================
-  // ERROR
+  // FATAL ERROR
   // ========================================
 
-  if (
-    error ||
-    !details
-  ) {
+  if (!details) {
     return (
       <SafeAreaView className="flex-1 bg-[#F8FAFC] px-5">
 
@@ -527,16 +767,28 @@ const handleReject =
             router.back()
           }
           className="mt-3 h-11 w-11 items-center justify-center rounded-full bg-white"
+          style={{
+            alignSelf:
+              isArabic
+                ? "flex-end"
+                : "flex-start",
+          }}
         >
+
           <Ionicons
-            name="arrow-back"
+            name={
+              isArabic
+                ? "arrow-forward"
+                : "arrow-back"
+            }
             size={22}
             color="#0F172A"
           />
+
         </Pressable>
 
 
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center pb-20">
 
           <Ionicons
             name="alert-circle-outline"
@@ -544,10 +796,35 @@ const handleReject =
             color="#DC2626"
           />
 
-          <Text className="mt-4 text-center font-semibold text-red-600">
+
+          <Text
+            className="mt-4 font-semibold text-red-600"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
             {error ||
-              "Application not found"}
+              t(
+                "admin.errors.applicationNotFound"
+              )}
           </Text>
+
+
+          <Pressable
+            onPress={
+              loadDetails
+            }
+            className="mt-5 rounded-xl bg-[#2563EB] px-6 py-3"
+          >
+
+            <Text className="font-bold text-white">
+              {t(
+                "common.retry"
+              )}
+            </Text>
+
+          </Pressable>
 
         </View>
 
@@ -570,13 +847,16 @@ const handleReject =
   return (
     <SafeAreaView
       className="flex-1 bg-[#F8FAFC]"
-      edges={["top"]}
+      edges={[
+        "top",
+      ]}
     >
 
       <ScrollView
         showsVerticalScrollIndicator={
           false
         }
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal:
             20,
@@ -586,9 +866,18 @@ const handleReject =
         }}
       >
 
-        {/* HEADER */}
+        {/* ==================================
+            HEADER
+        ================================== */}
 
-        <View className="mt-3 flex-row items-center">
+        <View
+          className="mt-3"
+          style={{
+            ...rowDirection,
+            alignItems:
+              "center",
+          }}
+        >
 
           <Pressable
             onPress={() =>
@@ -598,7 +887,11 @@ const handleReject =
           >
 
             <Ionicons
-              name="arrow-back"
+              name={
+                isArabic
+                  ? "arrow-forward"
+                  : "arrow-back"
+              }
               size={22}
               color="#0F172A"
             />
@@ -606,14 +899,35 @@ const handleReject =
           </Pressable>
 
 
-          <View className="ml-4 flex-1">
+          <View
+            className="flex-1"
+            style={{
+              marginStart:
+                14,
+            }}
+          >
 
-            <Text className="text-xl font-bold text-[#0F172A]">
-              Provider Application
+            <Text
+              className="text-xl font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "admin.providerApplication"
+              )}
             </Text>
 
-            <Text className="mt-1 text-xs text-[#64748B]">
-              Review full application
+
+            <Text
+              className="mt-1 text-xs text-[#64748B]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "admin.reviewFullApplication"
+              )}
             </Text>
 
           </View>
@@ -621,11 +935,19 @@ const handleReject =
         </View>
 
 
-        {/* PROVIDER HEADER */}
+        {/* ==================================
+            PROVIDER HEADER
+        ================================== */}
 
         <View className="mt-6 rounded-2xl bg-white p-5">
 
-          <View className="flex-row items-center">
+          <View
+            style={{
+              ...rowDirection,
+              alignItems:
+                "center",
+            }}
+          >
 
             <View className="h-16 w-16 items-center justify-center rounded-full bg-[#EFF6FF]">
 
@@ -639,16 +961,34 @@ const handleReject =
             </View>
 
 
-            <View className="ml-4 flex-1">
+            <View
+              className="flex-1"
+              style={{
+                marginStart:
+                  14,
+              }}
+            >
 
-              <Text className="text-xl font-bold text-[#0F172A]">
+              <Text
+                className="text-xl font-bold text-[#0F172A]"
+                style={
+                  textDirection
+                }
+              >
                 {
                   application.fullName
                 }
               </Text>
 
 
-              <View className="mt-2 flex-row items-center">
+              <View
+                className="mt-2"
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
 
                 <Ionicons
                   name="location-outline"
@@ -656,10 +996,21 @@ const handleReject =
                   color="#64748B"
                 />
 
-                <Text className="ml-1 text-sm text-[#64748B]">
+
+                <Text
+                  className="text-sm text-[#64748B]"
+                  style={{
+                    marginStart:
+                      5,
+
+                    ...textDirection,
+                  }}
+                >
                   {
                     application.city ||
-                    "No city"
+                    t(
+                      "admin.noCity"
+                    )
                   }
                 </Text>
 
@@ -668,11 +1019,19 @@ const handleReject =
             </View>
 
 
-            <View className="rounded-full bg-amber-50 px-3 py-2">
+            <View
+              className="rounded-full bg-amber-50 px-3 py-2"
+              style={{
+                marginStart:
+                  8,
+              }}
+            >
 
-              <Text className="text-xs font-bold capitalize text-amber-700">
+              <Text className="text-xs font-bold text-amber-700">
                 {
-                  application.approvalStatus
+                  getApplicationStatus(
+                    application.approvalStatus
+                  )
                 }
               </Text>
 
@@ -683,10 +1042,19 @@ const handleReject =
         </View>
 
 
-        {/* PERSONAL INFO */}
+        {/* ==================================
+            PERSONAL INFO
+        ================================== */}
 
-        <Text className="mt-8 text-lg font-bold text-[#0F172A]">
-          Personal Information
+        <Text
+          className="mt-8 text-lg font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "admin.personalInformation"
+          )}
         </Text>
 
 
@@ -694,72 +1062,148 @@ const handleReject =
 
           <InfoRow
             icon="call-outline"
-            label="Phone"
+            label={t(
+              "admin.phone"
+            )}
             value={
               application.phone ||
-              "Not provided"
+              t(
+                "profile.notProvided"
+              )
             }
+            isArabic={
+              isArabic
+            }
+            ltrValue
           />
 
+
           <Divider />
+
 
           <InfoRow
             icon="mail-outline"
-            label="Email"
+            label={t(
+              "admin.email"
+            )}
             value={
               application.email ||
-              "Not provided"
+              t(
+                "profile.notProvided"
+              )
             }
+            isArabic={
+              isArabic
+            }
+            ltrValue
           />
 
+
           <Divider />
+
 
           <InfoRow
             icon="location-outline"
-            label="City"
+            label={t(
+              "admin.city"
+            )}
             value={
               application.city ||
-              "Not provided"
+              t(
+                "profile.notProvided"
+              )
+            }
+            isArabic={
+              isArabic
             }
           />
 
+
           <Divider />
+
 
           <InfoRow
             icon="briefcase-outline"
-            label="Experience"
-            value={`${application.experienceYears} years`}
+            label={t(
+              "admin.experience"
+            )}
+            value={t(
+              "admin.experienceYears",
+              {
+                count:
+                  application.experienceYears,
+              }
+            )}
+            isArabic={
+              isArabic
+            }
           />
 
         </View>
 
 
-        {/* BIO */}
+        {/* ==================================
+            BIO
+        ================================== */}
 
-        <Text className="mt-8 text-lg font-bold text-[#0F172A]">
-          About Provider
+        <Text
+          className="mt-8 text-lg font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "admin.aboutProvider"
+          )}
         </Text>
+
 
         <View className="mt-3 rounded-2xl bg-white p-5">
 
-          <Text className="leading-6 text-[#64748B]">
+          <Text
+            className="leading-6 text-[#64748B]"
+            style={
+              textDirection
+            }
+          >
             {application.bio ||
-              "No description provided."}
+              t(
+                "admin.noDescription"
+              )}
           </Text>
 
         </View>
 
 
-        {/* SERVICES */}
+        {/* ==================================
+            SERVICES
+        ================================== */}
 
-        <View className="mt-8 flex-row items-center">
+        <View
+          className="mt-8"
+          style={{
+            ...rowDirection,
+            alignItems:
+              "center",
+          }}
+        >
 
-          <Text className="flex-1 text-lg font-bold text-[#0F172A]">
-            Services & Prices
+          <Text
+            className="flex-1 text-lg font-bold text-[#0F172A]"
+            style={
+              textDirection
+            }
+          >
+            {t(
+              "admin.servicesPrices"
+            )}
           </Text>
 
+
           <Text className="font-bold text-[#2563EB]">
-            {services.length}
+            {
+              services.length
+            }
           </Text>
 
         </View>
@@ -767,83 +1211,162 @@ const handleReject =
 
         {services.length ===
         0 ? (
+
           <View className="mt-3 rounded-2xl bg-white p-5">
 
-            <Text className="text-center text-[#64748B]">
-              No services selected.
+            <Text
+              className="text-[#64748B]"
+              style={{
+                textAlign:
+                  "center",
+              }}
+            >
+              {t(
+                "admin.noServicesSelected"
+              )}
             </Text>
 
           </View>
+
         ) : (
+
           services.map(
-            (service) => (
-              <View
-                key={
-                  service.id
-                }
-                className="mt-3 rounded-2xl bg-white p-5"
-              >
+            (service) => {
 
-                <View className="flex-row items-center">
-
-                  <View className="h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
-
-                    <Ionicons
-                      name="construct-outline"
-                      size={21}
-                      color="#2563EB"
-                    />
-
-                  </View>
+              const serviceName =
+                t(
+                  `db.services.${service.serviceSlug}.name`,
+                  {
+                    defaultValue:
+                      service.serviceName,
+                  }
+                );
 
 
-                  <View className="ml-3 flex-1">
+              const categoryName =
+                t(
+                  `db.categories.${service.categorySlug}.name`,
+                  {
+                    defaultValue:
+                      service.categoryName,
+                  }
+                );
 
-                    <Text className="font-bold text-[#0F172A]">
-                      {
-                        service.serviceName
-                      }
+
+              return (
+                <View
+                  key={
+                    service.id
+                  }
+                  className="mt-3 rounded-2xl bg-white p-5"
+                >
+
+                  <View
+                    style={{
+                      ...rowDirection,
+                      alignItems:
+                        "center",
+                    }}
+                  >
+
+                    <View className="h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
+
+                      <Ionicons
+                        name="construct-outline"
+                        size={21}
+                        color="#2563EB"
+                      />
+
+                    </View>
+
+
+                    <View
+                      className="flex-1"
+                      style={{
+                        marginStart:
+                          12,
+                      }}
+                    >
+
+                      <Text
+                        className="font-bold text-[#0F172A]"
+                        style={
+                          textDirection
+                        }
+                      >
+                        {
+                          serviceName
+                        }
+                      </Text>
+
+
+                      <Text
+                        className="mt-1 text-xs text-[#64748B]"
+                        style={
+                          textDirection
+                        }
+                      >
+                        {
+                          categoryName
+                        }
+                      </Text>
+
+                    </View>
+
+
+                    <Text
+                      className="text-base font-bold text-[#2563EB]"
+                      style={{
+                        marginStart:
+                          8,
+
+                        writingDirection:
+                          "ltr",
+                      }}
+                    >
+                      {(
+                        service.priceAgorot /
+                        100
+                      ).toFixed(
+                        2
+                      )}{" "}
+                      ₪
                     </Text>
 
-                    <Text className="mt-1 text-xs text-[#64748B]">
-                      {
-                        service.categoryName
-                      }
-                    </Text>
-
                   </View>
-
-
-                  <Text className="text-base font-bold text-[#2563EB]">
-                    {(
-                      service.priceAgorot /
-                      100
-                    ).toFixed(
-                      2
-                    )}{" "}
-                    ₪
-                  </Text>
 
                 </View>
-
-              </View>
-            )
+              );
+            }
           )
+
         )}
 
 
-        {/* WORKING HOURS */}
+        {/* ==================================
+            WORKING HOURS
+        ================================== */}
 
-        <Text className="mt-8 text-lg font-bold text-[#0F172A]">
-          Working Hours
+        <Text
+          className="mt-8 text-lg font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "admin.workingHours"
+          )}
         </Text>
 
 
         <View className="mt-3 rounded-2xl bg-white p-5">
 
-          {availability
+          {[...availability]
             .sort(
-              (a, b) =>
+              (
+                a,
+                b
+              ) =>
                 a.dayOfWeek -
                 b.dayOfWeek
             )
@@ -852,32 +1375,51 @@ const handleReject =
                 day,
                 index
               ) => (
+
                 <React.Fragment
                   key={
                     day.id
                   }
                 >
 
-                  <View className="flex-row items-center">
+                  <View
+                    style={{
+                      ...rowDirection,
+                      alignItems:
+                        "center",
+                    }}
+                  >
 
-                    <Text className="flex-1 font-semibold text-[#0F172A]">
-                      {
-                        DAYS[
-                          day.dayOfWeek
-                        ]
+                    <Text
+                      className="flex-1 font-semibold text-[#0F172A]"
+                      style={
+                        textDirection
                       }
+                    >
+                      {t(
+                        `weekdays.${getDayKey(
+                          day.dayOfWeek
+                        )}`
+                      )}
                     </Text>
 
 
                     {day.isAvailable ? (
-                      <Text className="font-semibold text-[#16A34A]">
+
+                      <Text
+                        className="font-semibold text-[#16A34A]"
+                        style={{
+                          writingDirection:
+                            "ltr",
+                        }}
+                      >
                         {String(
                           day.startTime
                         ).slice(
                           0,
                           5
-                        )}{" "}
-                        -{" "}
+                        )}
+                        {" - "}
                         {String(
                           day.endTime
                         ).slice(
@@ -885,10 +1427,15 @@ const handleReject =
                           5
                         )}
                       </Text>
+
                     ) : (
+
                       <Text className="text-[#94A3B8]">
-                        Closed
+                        {t(
+                          "admin.closed"
+                        )}
                       </Text>
+
                     )}
 
                   </View>
@@ -907,207 +1454,359 @@ const handleReject =
         </View>
 
 
-        {/* REVIEW PREVIEW */}
+        {/* ==================================
+            ACTION ERROR
+        ================================== */}
 
-        <View className="mt-8 rounded-2xl bg-[#EFF6FF] p-5">
+        {error ? (
 
-          <View className="flex-row items-center">
+          <View className="mt-6 rounded-2xl bg-red-50 p-4">
 
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={24}
-              color="#2563EB"
-            />
+            <View
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
 
-            {/* ==================================
-    ADMIN DECISION
-================================== */}
-
-{application.approvalStatus ===
-"pending" ? (
-  <View className="mt-8">
-
-    <Text className="text-lg font-bold text-[#0F172A]">
-      Admin Decision
-    </Text>
-
-
-    <View className="mt-3 rounded-2xl bg-[#EFF6FF] p-5">
-
-      <View className="flex-row items-center">
-
-        <Ionicons
-          name="shield-checkmark-outline"
-          size={24}
-          color="#2563EB"
-        />
-
-        <Text className="ml-3 flex-1 text-sm leading-5 text-[#64748B]">
-          Review all provider information before making a final decision.
-        </Text>
-
-      </View>
-
-    </View>
-
-
-    {/* APPROVE */}
-
-    <Pressable
-      disabled={
-        decisionLoading !==
-        null
-      }
-      onPress={
-        handleApprove
-      }
-      className="mt-5 flex-row items-center justify-center rounded-2xl bg-[#16A34A] py-4"
-    >
-
-      {decisionLoading ===
-      "approve" ? (
-        <ActivityIndicator
-          color="white"
-        />
-      ) : (
-        <>
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={21}
-            color="white"
-          />
-
-          <Text className="ml-2 font-bold text-white">
-            Approve Provider
-          </Text>
-        </>
-      )}
-
-    </Pressable>
-
-
-    {/* REJECT OPEN BUTTON */}
-
-    {!showRejectBox ? (
-      <Pressable
-        disabled={
-          decisionLoading !==
-          null
-        }
-        onPress={() => {
-          setShowRejectBox(
-            true
-          );
-
-          setError(null);
-        }}
-        className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 py-4"
-      >
-
-        <Ionicons
-          name="close-circle-outline"
-          size={21}
-          color="#DC2626"
-        />
-
-        <Text className="ml-2 font-bold text-red-600">
-          Reject Application
-        </Text>
-
-      </Pressable>
-    ) : null}
-
-
-    {/* REJECTION REASON */}
-
-    {showRejectBox ? (
-      <View className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4">
-
-        <Text className="font-bold text-[#0F172A]">
-          Rejection Reason
-        </Text>
-
-        <Text className="mt-1 text-xs leading-5 text-[#64748B]">
-          This reason will be shown to the provider so they can correct their application.
-        </Text>
-
-
-        <TextInput
-          value={
-            rejectionReason
-          }
-          onChangeText={
-            setRejectionReason
-          }
-          multiline
-          textAlignVertical="top"
-          placeholder="Explain why the application was rejected..."
-          placeholderTextColor="#94A3B8"
-          className="mt-4 min-h-[110px] rounded-xl border border-red-100 bg-white p-4 text-[#0F172A]"
-        />
-
-
-        <View className="mt-4 flex-row">
-
-          <Pressable
-            disabled={
-              decisionLoading !==
-              null
-            }
-            onPress={() => {
-              setShowRejectBox(
-                false
-              );
-
-              setRejectionReason(
-                ""
-              );
-            }}
-            className="mr-2 flex-1 items-center rounded-xl bg-white py-3.5"
-          >
-
-            <Text className="font-bold text-[#64748B]">
-              Cancel
-            </Text>
-
-          </Pressable>
-
-
-          <Pressable
-            disabled={
-              decisionLoading !==
-              null
-            }
-            onPress={
-              handleReject
-            }
-            className="ml-2 flex-1 items-center rounded-xl bg-[#DC2626] py-3.5"
-          >
-
-            {decisionLoading ===
-            "reject" ? (
-              <ActivityIndicator
-                color="white"
+              <Ionicons
+                name="alert-circle-outline"
+                size={21}
+                color="#DC2626"
               />
-            ) : (
-              <Text className="font-bold text-white">
-                Confirm Reject
+
+
+              <Text
+                className="flex-1 font-semibold text-red-600"
+                style={{
+                  marginStart:
+                    8,
+
+                  ...textDirection,
+                }}
+              >
+                {error}
               </Text>
-            )}
 
-          </Pressable>
-
-        </View>
-
-      </View>
-    ) : null}
-
-  </View>
-) : null}
+            </View>
 
           </View>
 
-        </View>
+        ) : null}
+
+
+        {/* ==================================
+            ADMIN DECISION
+        ================================== */}
+
+        {application
+          .approvalStatus ===
+        "pending" ? (
+
+          <View className="mt-8">
+
+            <Text
+              className="text-lg font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "admin.adminDecision"
+              )}
+            </Text>
+
+
+            <View className="mt-3 rounded-2xl bg-[#EFF6FF] p-5">
+
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
+
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={24}
+                  color="#2563EB"
+                />
+
+
+                <Text
+                  className="flex-1 text-sm leading-5 text-[#64748B]"
+                  style={{
+                    marginStart:
+                      12,
+
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "admin.decisionDescription"
+                  )}
+                </Text>
+
+              </View>
+
+            </View>
+
+
+            {/* APPROVE */}
+
+            <Pressable
+              disabled={
+                decisionLoading !==
+                null
+              }
+              onPress={
+                handleApprove
+              }
+              className="mt-5 items-center justify-center rounded-2xl bg-[#16A34A] py-4"
+            >
+
+              {decisionLoading ===
+              "approve" ? (
+
+                <ActivityIndicator
+                  color="white"
+                />
+
+              ) : (
+
+                <View
+                  style={{
+                    ...rowDirection,
+                    alignItems:
+                      "center",
+                  }}
+                >
+
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={21}
+                    color="white"
+                  />
+
+
+                  <Text
+                    className="font-bold text-white"
+                    style={{
+                      marginStart:
+                        8,
+                    }}
+                  >
+                    {t(
+                      "admin.approve"
+                    )}
+                  </Text>
+
+                </View>
+
+              )}
+
+            </Pressable>
+
+
+            {/* OPEN REJECT */}
+
+            {!showRejectBox ? (
+
+              <Pressable
+                disabled={
+                  decisionLoading !==
+                  null
+                }
+                onPress={() => {
+                  setShowRejectBox(
+                    true
+                  );
+
+                  setError(
+                    null
+                  );
+                }}
+                className="mt-3 items-center justify-center rounded-2xl border border-red-200 bg-red-50 py-4"
+              >
+
+                <View
+                  style={{
+                    ...rowDirection,
+                    alignItems:
+                      "center",
+                  }}
+                >
+
+                  <Ionicons
+                    name="close-circle-outline"
+                    size={21}
+                    color="#DC2626"
+                  />
+
+
+                  <Text
+                    className="font-bold text-red-600"
+                    style={{
+                      marginStart:
+                        8,
+                    }}
+                  >
+                    {t(
+                      "admin.reject"
+                    )}
+                  </Text>
+
+                </View>
+
+              </Pressable>
+
+            ) : null}
+
+
+            {/* REJECTION BOX */}
+
+            {showRejectBox ? (
+
+              <View className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4">
+
+                <Text
+                  className="font-bold text-[#0F172A]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "admin.rejectionReason"
+                  )}
+                </Text>
+
+
+                <Text
+                  className="mt-1 text-xs leading-5 text-[#64748B]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "admin.rejectionReasonDescription"
+                  )}
+                </Text>
+
+
+                <TextInput
+                  value={
+                    rejectionReason
+                  }
+                  onChangeText={
+                    setRejectionReason
+                  }
+                  multiline
+                  textAlignVertical="top"
+                  placeholder={t(
+                    "admin.rejectionReasonPlaceholder"
+                  )}
+                  placeholderTextColor="#94A3B8"
+                  className="mt-4 min-h-[110px] rounded-xl border border-red-100 bg-white p-4 text-[#0F172A]"
+                  style={{
+                    textAlign:
+                      isArabic
+                        ? "right"
+                        : "left",
+
+                    writingDirection:
+                      isArabic
+                        ? "rtl"
+                        : "ltr",
+                  }}
+                />
+
+
+                <View
+                  className="mt-4"
+                  style={{
+                    ...rowDirection,
+                  }}
+                >
+
+                  <Pressable
+                    disabled={
+                      decisionLoading !==
+                      null
+                    }
+                    onPress={() => {
+                      setShowRejectBox(
+                        false
+                      );
+
+                      setRejectionReason(
+                        ""
+                      );
+
+                      setError(
+                        null
+                      );
+                    }}
+                    className="flex-1 items-center rounded-xl bg-white py-3.5"
+                    style={{
+                      marginEnd:
+                        8,
+                    }}
+                  >
+
+                    <Text className="font-bold text-[#64748B]">
+                      {t(
+                        "common.cancel"
+                      )}
+                    </Text>
+
+                  </Pressable>
+
+
+                  <Pressable
+                    disabled={
+                      decisionLoading !==
+                      null
+                    }
+                    onPress={
+                      handleReject
+                    }
+                    className="flex-1 items-center rounded-xl bg-[#DC2626] py-3.5"
+                    style={{
+                      marginStart:
+                        8,
+                    }}
+                  >
+
+                    {decisionLoading ===
+                    "reject" ? (
+
+                      <ActivityIndicator
+                        color="white"
+                      />
+
+                    ) : (
+
+                      <Text className="font-bold text-white">
+                        {t(
+                          "admin.confirmReject"
+                        )}
+                      </Text>
+
+                    )}
+
+                  </Pressable>
+
+                </View>
+
+              </View>
+
+            ) : null}
+
+          </View>
+
+        ) : null}
 
       </ScrollView>
 
@@ -1124,15 +1823,34 @@ function InfoRow({
   icon,
   label,
   value,
+  isArabic,
+  ltrValue = false,
 }: {
   icon:
     keyof typeof Ionicons.glyphMap;
 
   label: string;
+
   value: string;
+
+  isArabic:
+    boolean;
+
+  ltrValue?:
+    boolean;
 }) {
   return (
-    <View className="flex-row items-center">
+    <View
+      style={{
+        flexDirection:
+          isArabic
+            ? "row-reverse"
+            : "row",
+
+        alignItems:
+          "center",
+      }}
+    >
 
       <Ionicons
         name={icon}
@@ -1140,11 +1858,42 @@ function InfoRow({
         color="#64748B"
       />
 
-      <Text className="ml-3 text-sm text-[#64748B]">
+
+      <Text
+        className="text-sm text-[#64748B]"
+        style={{
+          marginStart:
+            12,
+
+          textAlign:
+            isArabic
+              ? "right"
+              : "left",
+        }}
+      >
         {label}
       </Text>
 
-      <Text className="ml-auto max-w-[190px] text-right font-semibold text-[#0F172A]">
+
+      <Text
+        className="flex-1 font-semibold text-[#0F172A]"
+        style={{
+          marginStart:
+            12,
+
+          textAlign:
+            isArabic
+              ? "left"
+              : "right",
+
+          writingDirection:
+            ltrValue
+              ? "ltr"
+              : isArabic
+                ? "rtl"
+                : "ltr",
+        }}
+      >
         {value}
       </Text>
 

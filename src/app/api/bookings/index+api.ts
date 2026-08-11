@@ -2,11 +2,25 @@ export async function POST(
   request: Request
 ) {
   try {
+    const {
+      requireUserId,
+    } = await import(
+      "@/lib/server/auth"
+    );
+
+    // العميل الحقيقي يؤخذ من Clerk
+    // وليس من body
+    const customerId =
+      await requireUserId(
+        request
+      );
+
+
     const body =
       await request.json();
 
+
     const {
-      customerId,
       providerId,
       serviceId,
       bookingDate,
@@ -15,11 +29,13 @@ export async function POST(
       notes,
     } = body;
 
+
     const {
       createBooking,
     } = await import(
       "@/lib/server/booking-actions"
     );
+
 
     const booking =
       await createBooking({
@@ -32,6 +48,7 @@ export async function POST(
         notes,
       });
 
+
     return Response.json(
       {
         booking,
@@ -40,49 +57,57 @@ export async function POST(
         status: 201,
       }
     );
+
   } catch (error) {
     console.error(
       "CREATE BOOKING ERROR:",
       error
     );
 
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create booking";
+
+
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to create booking",
+        error: message,
       },
       {
-        status: 400,
+        status:
+          message ===
+          "Unauthorized"
+            ? 401
+            : 400,
       }
     );
   }
 }
 
+
+// ========================================
+// GET MY BOOKINGS
+// ========================================
+
 export async function GET(
   request: Request
 ) {
   try {
-    const url =
-      new URL(request.url);
+    const {
+      requireUserId,
+    } = await import(
+      "@/lib/server/auth"
+    );
 
+
+    // لا نقبل customerId من query
     const customerId =
-      url.searchParams.get(
-        "customerId"
+      await requireUserId(
+        request
       );
 
-    if (!customerId) {
-      return Response.json(
-        {
-          error:
-            "Customer id is required",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
 
     const {
       listCustomerBookings,
@@ -90,29 +115,40 @@ export async function GET(
       "@/lib/server/booking-actions"
     );
 
+
     const bookings =
       await listCustomerBookings(
         customerId
       );
 
+
     return Response.json({
       bookings,
     });
+
   } catch (error) {
     console.error(
       "GET BOOKINGS ERROR:",
       error
     );
 
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to load bookings";
+
+
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to load bookings",
+        error: message,
       },
       {
-        status: 500,
+        status:
+          message ===
+          "Unauthorized"
+            ? 401
+            : 500,
       }
     );
   }

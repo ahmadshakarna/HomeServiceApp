@@ -346,6 +346,82 @@ bookingSuccess: {
   backHome:
     "Back to Home",
 },
+
+myBookings: {
+  title:
+    "My Bookings",
+
+  subtitle:
+    "Track and manage your home services",
+
+  loading:
+    "Loading bookings...",
+
+  loadError:
+    "Couldn't load bookings",
+
+  loadErrorDescription:
+    "Something went wrong while loading your bookings.",
+
+  empty:
+    "No bookings yet",
+
+  emptyDescription:
+    "Your service bookings will appear here.",
+},
+
+bookingDetails: {
+  title:
+    "Booking Details",
+
+  loading:
+    "Loading booking...",
+
+  loadError:
+    "Couldn't load booking",
+
+  loadErrorDescription:
+    "Something went wrong while loading this booking.",
+
+  status:
+    "Booking Status",
+
+  provider:
+    "Service Provider",
+
+  appointment:
+    "Appointment",
+
+  notes:
+    "Notes",
+
+  bookingId:
+    "Booking ID",
+
+  cancelBooking:
+    "Cancel Booking",
+
+  cancelling:
+    "Cancelling...",
+
+  cancelTitle:
+    "Cancel Booking",
+
+  cancelDescription:
+    "Are you sure you want to cancel this booking?",
+
+  keepBooking:
+    "Keep Booking",
+
+  cancelledTitle:
+    "Booking Cancelled",
+
+  cancelledDescription:
+    "Your booking has been cancelled successfully.",
+
+  actionError:
+    "Couldn't complete the request. Please try again.",
+},
       // ================================
       // PROVIDER
       // ================================
@@ -410,7 +486,35 @@ bookingSuccess: {
 
         servicesPrices:
           "Services & Prices",
+          loadingDashboard:
+            "Loading dashboard...",
+
+            providerFallback:
+            "Provider",
+
+            activeStatus:
+            "Active",
       },
+
+      errors: {
+            authenticationRequired:
+                "Authentication is required.",
+
+            accountNotFound:
+                "Provider account not found.",
+
+            notApproved:
+                "Your provider account is not approved yet.",
+
+            inactive:
+                "Your provider account is inactive.",
+
+            bookingNotFound:
+                "Booking not found.",
+
+            generic:
+                "Something went wrong. Please try again.",
+            },
 
 
       providerProfile: {
@@ -460,6 +564,204 @@ bookingSuccess: {
     "Book Provider",
 },
 
+becomeProvider: {
+  title: "Become a Provider",
+  subtitle: "Complete your provider profile",
+
+  loading: "Loading application...",
+
+  introTitle: "Start offering services",
+  introDescription:
+    "Complete your information, choose your services, set your prices and working hours.",
+
+  pendingTitle: "Application Pending",
+  pendingDescription:
+    "Your provider application is currently under review.",
+
+  approvedTitle: "You're a Provider",
+  approvedDescription:
+    "Your provider account has been approved.",
+
+  rejectedTitle: "Previous application rejected",
+  rejectedDescription:
+    "Update your information and apply again.",
+
+  personalTitle: "Personal Information",
+  personalSubtitle: "Tell us about yourself",
+
+  fullName: "Full Name *",
+  fullNamePlaceholder: "Full name",
+
+  phone: "Phone Number *",
+
+  email: "Email",
+  emailPlaceholder: "Email",
+
+  city: "City *",
+  cityPlaceholder: "Bethlehem",
+
+  experience: "Years of Experience",
+
+  aboutYou: "About You",
+  bioPlaceholder:
+    "Tell customers about your experience...",
+
+  personalSaved:
+    "Personal information saved.",
+
+  saveInformation:
+    "Save Information",
+
+  servicesTitle:
+    "Services & Prices",
+
+  servicesSubtitle:
+    "Select the services you offer",
+
+  noServices:
+    "No services available.",
+
+  startingPrice:
+    "Starting Price",
+
+  servicesSaved:
+    "Services and prices saved.",
+
+  saveServices:
+    "Save Services",
+
+  workingHoursTitle:
+    "Working Hours",
+
+  workingHoursSubtitle:
+    "Choose the days and hours you're available",
+
+  timeHint:
+    "Use 24-hour format, for example 09:00 to 17:00.",
+
+  notAvailable:
+    "Not available",
+
+  startTime:
+    "Start Time",
+
+  endTime:
+    "End Time",
+
+  hoursSaved:
+    "Working hours saved successfully.",
+
+  saveWorkingHours:
+    "Save Working Hours",
+
+  reviewTitle:
+    "Review & Submit",
+
+  reviewSubtitle:
+    "Review your application before sending it",
+
+  selectedServicesCount_one:
+    "{{count}} service selected",
+
+  selectedServicesCount_other:
+    "{{count}} services selected",
+
+  workingDaysCount_one:
+    "{{count}} working day",
+
+  workingDaysCount_other:
+    "{{count}} working days",
+
+  submitWarning:
+    "After submitting, your application will be sent for review and you won't be able to edit it while it is pending.",
+
+  submitApplication:
+    "Submit Application",
+
+  errors: {
+    authenticationRequired:
+      "Authentication is required.",
+
+    fullNameRequired:
+      "Full name is required.",
+
+    phoneRequired:
+      "Phone number is required.",
+
+    cityRequired:
+      "City is required.",
+
+    invalidExperience:
+      "Please enter valid years of experience.",
+
+    selectService:
+      "Select at least one service.",
+
+    invalidPrice:
+      "Enter a valid price for every selected service.",
+
+    selectWorkingDay:
+      "Select at least one working day.",
+
+    invalidTime:
+      "Please enter a valid working time.",
+
+    invalidTimeForDay:
+      "Enter a valid time for {{day}}. Example: 09:00",
+
+    endAfterStart:
+      "End time must be after start time.",
+
+    endAfterStartForDay:
+      "End time must be after start time for {{day}}.",
+
+    saveServicesFirst:
+      "Save your services first.",
+
+    saveHoursFirst:
+      "Save your working hours first.",
+
+    savePersonalFirst:
+      "Save your personal information first.",
+
+    alreadyPending:
+      "Your application is already under review.",
+
+    alreadyApproved:
+      "Your provider account is already approved.",
+
+    applicationNotFound:
+      "Provider application not found.",
+
+    completeHours:
+      "Complete your working hours.",
+
+    invalidService:
+      "One or more selected services are invalid.",
+
+    loadApplication:
+      "Couldn't load your application.",
+
+    loadServices:
+      "Couldn't load services.",
+
+    loadHours:
+      "Couldn't load working hours.",
+
+    saveApplication:
+      "Couldn't save your information.",
+
+    saveServices:
+      "Couldn't save your services.",
+
+    saveHours:
+      "Couldn't save your working hours.",
+
+    submitApplication:
+      "Couldn't submit your application.",
+  },
+},
+
 
       // ================================
       // ADMIN
@@ -492,6 +794,134 @@ bookingSuccess: {
 
         noApplications:
           "No pending applications",
+
+        loadingApplications:
+  "Loading applications...",
+
+        loadingApplication:
+        "Loading application...",
+
+        pendingApplicationsDescription:
+        "Review the provider's information, services, prices and working hours before approval.",
+
+        noApplicationsDescription:
+        "New provider applications will appear here.",
+
+        noCity:
+        "No city",
+
+        status:
+        "Status",
+
+        statusPending:
+        "Pending",
+
+        statusApproved:
+        "Approved",
+
+        statusRejected:
+        "Rejected",
+
+        statusDraft:
+        "Draft",
+
+        experience:
+        "Experience",
+
+        experienceYears_one:
+        "{{count}} year",
+
+        experienceYears_other:
+        "{{count}} years",
+
+        providerApplication:
+        "Provider Application",
+
+        reviewFullApplication:
+        "Review full application",
+
+        personalInformation:
+        "Personal Information",
+
+        phone:
+        "Phone",
+
+        email:
+        "Email",
+
+        city:
+        "City",
+
+        aboutProvider:
+        "About Provider",
+
+        noDescription:
+        "No description provided.",
+
+        servicesPrices:
+        "Services & Prices",
+
+        noServicesSelected:
+        "No services selected.",
+
+        workingHours:
+        "Working Hours",
+
+        closed:
+        "Closed",
+
+        adminDecision:
+        "Admin Decision",
+
+        decisionDescription:
+        "Review all provider information before making a final decision.",
+
+        approveConfirm:
+        "Are you sure you want to approve this provider?",
+
+        approveAction:
+        "Approve",
+
+        rejectConfirm:
+        "Are you sure you want to reject this application?",
+
+        rejectAction:
+        "Reject",
+
+        rejectionReasonDescription:
+        "This reason will be shown to the provider so they can correct their application.",
+
+        rejectionReasonPlaceholder:
+        "Explain why the application was rejected...",
+
+        confirmReject:
+        "Confirm Reject",
+
+        errors: {
+        authenticationRequired:
+            "Authentication is required.",
+
+        forbidden:
+            "You don't have permission to access the admin panel.",
+
+        loadApplications:
+            "Couldn't load provider applications.",
+
+        loadApplication:
+            "Couldn't load this application.",
+
+        updateApplication:
+            "Couldn't update the application.",
+
+        applicationNotFound:
+            "Provider application not found.",
+
+        rejectionReasonRequired:
+            "Please enter a rejection reason.",
+
+        noLongerPending:
+            "This application is no longer pending.",
+        },  
       },
 
 
@@ -499,25 +929,25 @@ bookingSuccess: {
       // STATUS
       // ================================
 
-      status: {
-        pending:
-          "Pending",
+     status: {
+  pending:
+    "Pending",
 
-        confirmed:
-          "Confirmed",
+  confirmed:
+    "Confirmed",
 
-        onTheWay:
-          "On The Way",
+  on_the_way:
+    "On The Way",
 
-        inProgress:
-          "In Progress",
+  in_progress:
+    "In Progress",
 
-        completed:
-          "Completed",
+  completed:
+    "Completed",
 
-        cancelled:
-          "Cancelled",
-      },
+  cancelled:
+    "Cancelled",
+            },
       db: {
         categories: {
             plumbing: {
@@ -1198,6 +1628,82 @@ bookingSuccess: {
     "العودة للرئيسية",
 },
 
+myBookings: {
+  title:
+    "حجوزاتي",
+
+  subtitle:
+    "تابع وأدر حجوزات خدماتك المنزلية",
+
+  loading:
+    "جاري تحميل الحجوزات...",
+
+  loadError:
+    "تعذر تحميل الحجوزات",
+
+  loadErrorDescription:
+    "حدث خطأ أثناء تحميل حجوزاتك.",
+
+  empty:
+    "لا توجد حجوزات بعد",
+
+  emptyDescription:
+    "ستظهر حجوزات خدماتك هنا.",
+},
+
+bookingDetails: {
+  title:
+    "تفاصيل الحجز",
+
+  loading:
+    "جاري تحميل الحجز...",
+
+  loadError:
+    "تعذر تحميل الحجز",
+
+  loadErrorDescription:
+    "حدث خطأ أثناء تحميل تفاصيل الحجز.",
+
+  status:
+    "حالة الحجز",
+
+  provider:
+    "مقدم الخدمة",
+
+  appointment:
+    "موعد الخدمة",
+
+  notes:
+    "ملاحظات",
+
+  bookingId:
+    "رقم الحجز",
+
+  cancelBooking:
+    "إلغاء الحجز",
+
+  cancelling:
+    "جاري الإلغاء...",
+
+  cancelTitle:
+    "إلغاء الحجز",
+
+  cancelDescription:
+    "هل أنت متأكد أنك تريد إلغاء هذا الحجز؟",
+
+  keepBooking:
+    "الاحتفاظ بالحجز",
+
+  cancelledTitle:
+    "تم إلغاء الحجز",
+
+  cancelledDescription:
+    "تم إلغاء الحجز بنجاح.",
+
+  actionError:
+    "تعذر تنفيذ الطلب، حاول مرة أخرى.",
+},
+
 
       provider: {
         dashboard:
@@ -1259,7 +1765,35 @@ bookingSuccess: {
 
         servicesPrices:
           "الخدمات والأسعار",
+        loadingDashboard:
+        "جاري تحميل لوحة مقدم الخدمة...",
+
+        providerFallback:
+        "مقدم خدمة",
+
+        activeStatus:
+        "نشط",  
       },
+
+      errors: {
+        authenticationRequired:
+            "يجب تسجيل الدخول للمتابعة.",
+
+        accountNotFound:
+            "لم يتم العثور على حساب مقدم الخدمة.",
+
+        notApproved:
+            "لم تتم الموافقة على حساب مقدم الخدمة بعد.",
+
+        inactive:
+            "حساب مقدم الخدمة غير نشط.",
+
+        bookingNotFound:
+            "لم يتم العثور على الحجز.",
+
+        generic:
+            "حدث خطأ، حاول مرة أخرى.",
+        },
 
       providerProfile: {
   title:
@@ -1308,6 +1842,227 @@ bookingSuccess: {
     "احجز مقدم الخدمة",
 },
 
+becomeProvider: {
+  title: "أصبح مقدم خدمة",
+  subtitle: "أكمل ملفك كمقدم خدمة",
+
+  loading: "جاري تحميل الطلب...",
+
+  introTitle: "ابدأ بتقديم خدماتك",
+  introDescription:
+    "أكمل معلوماتك، واختر الخدمات التي تقدمها وحدد أسعارك وساعات عملك.",
+
+  pendingTitle: "طلبك قيد المراجعة",
+  pendingDescription:
+    "طلب الانضمام كمقدم خدمة قيد المراجعة حاليًا.",
+
+  approvedTitle: "أصبحت مقدم خدمة",
+  approvedDescription:
+    "تمت الموافقة على حسابك كمقدم خدمة.",
+
+  rejectedTitle: "تم رفض الطلب السابق",
+  rejectedDescription:
+    "عدّل معلوماتك ثم أرسل الطلب مرة أخرى.",
+
+  personalTitle: "المعلومات الشخصية",
+  personalSubtitle: "أخبرنا عن نفسك",
+
+  fullName: "الاسم الكامل *",
+  fullNamePlaceholder: "الاسم الكامل",
+
+  phone: "رقم الهاتف *",
+
+  email: "البريد الإلكتروني",
+  emailPlaceholder: "البريد الإلكتروني",
+
+  city: "المدينة *",
+  cityPlaceholder: "بيت لحم",
+
+  experience: "سنوات الخبرة",
+
+  aboutYou: "نبذة عنك",
+  bioPlaceholder:
+    "أخبر العملاء عن خبرتك وأعمالك...",
+
+  personalSaved:
+    "تم حفظ المعلومات الشخصية.",
+
+  saveInformation:
+    "حفظ المعلومات",
+
+  servicesTitle:
+    "الخدمات والأسعار",
+
+  servicesSubtitle:
+    "اختر الخدمات التي تقدمها",
+
+  noServices:
+    "لا توجد خدمات متاحة.",
+
+  startingPrice:
+    "السعر يبدأ من",
+
+  servicesSaved:
+    "تم حفظ الخدمات والأسعار.",
+
+  saveServices:
+    "حفظ الخدمات",
+
+  workingHoursTitle:
+    "ساعات العمل",
+
+  workingHoursSubtitle:
+    "اختر الأيام والساعات التي تكون متاحًا فيها",
+
+  timeHint:
+    "استخدم نظام 24 ساعة، مثال: من 09:00 إلى 17:00.",
+
+  notAvailable:
+    "غير متاح",
+
+  startTime:
+    "وقت البداية",
+
+  endTime:
+    "وقت النهاية",
+
+  hoursSaved:
+    "تم حفظ ساعات العمل بنجاح.",
+
+  saveWorkingHours:
+    "حفظ ساعات العمل",
+
+  reviewTitle:
+    "المراجعة والإرسال",
+
+  reviewSubtitle:
+    "راجع طلبك قبل إرساله",
+
+  selectedServicesCount_zero:
+    "لم يتم اختيار خدمات",
+
+  selectedServicesCount_one:
+    "تم اختيار خدمة واحدة",
+
+  selectedServicesCount_two:
+    "تم اختيار خدمتين",
+
+  selectedServicesCount_few:
+    "تم اختيار {{count}} خدمات",
+
+  selectedServicesCount_many:
+    "تم اختيار {{count}} خدمة",
+
+  selectedServicesCount_other:
+    "تم اختيار {{count}} خدمة",
+
+  workingDaysCount_zero:
+    "لا توجد أيام عمل",
+
+  workingDaysCount_one:
+    "يوم عمل واحد",
+
+  workingDaysCount_two:
+    "يوما عمل",
+
+  workingDaysCount_few:
+    "{{count}} أيام عمل",
+
+  workingDaysCount_many:
+    "{{count}} يوم عمل",
+
+  workingDaysCount_other:
+    "{{count}} يوم عمل",
+
+  submitWarning:
+    "بعد إرسال الطلب سيتم تحويله للمراجعة، ولن تتمكن من تعديله أثناء فترة المراجعة.",
+
+  submitApplication:
+    "إرسال الطلب",
+
+  errors: {
+    authenticationRequired:
+      "يجب تسجيل الدخول للمتابعة.",
+
+    fullNameRequired:
+      "الاسم الكامل مطلوب.",
+
+    phoneRequired:
+      "رقم الهاتف مطلوب.",
+
+    cityRequired:
+      "المدينة مطلوبة.",
+
+    invalidExperience:
+      "أدخل عدد سنوات خبرة صحيحًا.",
+
+    selectService:
+      "اختر خدمة واحدة على الأقل.",
+
+    invalidPrice:
+      "أدخل سعرًا صحيحًا لكل خدمة مختارة.",
+
+    selectWorkingDay:
+      "اختر يوم عمل واحدًا على الأقل.",
+
+    invalidTime:
+      "أدخل وقت عمل صحيحًا.",
+
+    invalidTimeForDay:
+      "أدخل وقتًا صحيحًا ليوم {{day}}. مثال: 09:00",
+
+    endAfterStart:
+      "يجب أن يكون وقت النهاية بعد وقت البداية.",
+
+    endAfterStartForDay:
+      "يجب أن يكون وقت النهاية بعد وقت البداية ليوم {{day}}.",
+
+    saveServicesFirst:
+      "احفظ الخدمات أولًا.",
+
+    saveHoursFirst:
+      "احفظ ساعات العمل أولًا.",
+
+    savePersonalFirst:
+      "احفظ معلوماتك الشخصية أولًا.",
+
+    alreadyPending:
+      "طلبك قيد المراجعة بالفعل.",
+
+    alreadyApproved:
+      "تمت الموافقة على حسابك كمقدم خدمة بالفعل.",
+
+    applicationNotFound:
+      "لم يتم العثور على طلب مقدم الخدمة.",
+
+    completeHours:
+      "أكمل ساعات العمل.",
+
+    invalidService:
+      "واحدة أو أكثر من الخدمات المختارة غير صالحة.",
+
+    loadApplication:
+      "تعذر تحميل طلبك.",
+
+    loadServices:
+      "تعذر تحميل الخدمات.",
+
+    loadHours:
+      "تعذر تحميل ساعات العمل.",
+
+    saveApplication:
+      "تعذر حفظ معلوماتك.",
+
+    saveServices:
+      "تعذر حفظ الخدمات.",
+
+    saveHours:
+      "تعذر حفظ ساعات العمل.",
+
+    submitApplication:
+      "تعذر إرسال الطلب.",
+  },
+},
 
       admin: {
         panel:
@@ -1336,28 +2091,167 @@ bookingSuccess: {
 
         noApplications:
           "لا توجد طلبات معلقة",
+          loadingApplications:
+  "جاري تحميل الطلبات...",
+
+            loadingApplication:
+            "جاري تحميل الطلب...",
+
+            pendingApplicationsDescription:
+            "راجع معلومات مقدم الخدمة والخدمات والأسعار وساعات العمل قبل اتخاذ القرار.",
+
+            noApplicationsDescription:
+            "ستظهر طلبات مقدمي الخدمات الجديدة هنا.",
+
+            noCity:
+            "لا توجد مدينة",
+
+            status:
+            "الحالة",
+
+            statusPending:
+            "قيد المراجعة",
+
+            statusApproved:
+            "تمت الموافقة",
+
+            statusRejected:
+            "مرفوض",
+
+            statusDraft:
+            "مسودة",
+
+            experience:
+            "الخبرة",
+
+            experienceYears_zero:
+            "بدون خبرة",
+
+            experienceYears_one:
+            "سنة واحدة",
+
+            experienceYears_two:
+            "سنتان",
+
+            experienceYears_few:
+            "{{count}} سنوات",
+
+            experienceYears_many:
+            "{{count}} سنة",
+
+            experienceYears_other:
+            "{{count}} سنة",
+
+            providerApplication:
+            "طلب مقدم الخدمة",
+
+            reviewFullApplication:
+            "مراجعة الطلب بالكامل",
+
+            personalInformation:
+            "المعلومات الشخصية",
+
+            phone:
+            "الهاتف",
+
+            email:
+            "البريد الإلكتروني",
+
+            city:
+            "المدينة",
+
+            aboutProvider:
+            "نبذة عن مقدم الخدمة",
+
+            noDescription:
+            "لم تتم إضافة وصف.",
+
+            servicesPrices:
+            "الخدمات والأسعار",
+
+            noServicesSelected:
+            "لم يتم اختيار خدمات.",
+
+            workingHours:
+            "ساعات العمل",
+
+            closed:
+            "مغلق",
+
+            adminDecision:
+            "قرار الإدارة",
+
+            decisionDescription:
+            "راجع جميع معلومات مقدم الخدمة قبل اتخاذ القرار النهائي.",
+
+            approveConfirm:
+            "هل أنت متأكد أنك تريد الموافقة على مقدم الخدمة؟",
+
+            approveAction:
+            "موافقة",
+
+            rejectConfirm:
+            "هل أنت متأكد أنك تريد رفض هذا الطلب؟",
+
+            rejectAction:
+            "رفض",
+
+            rejectionReasonDescription:
+            "سيظهر هذا السبب لمقدم الخدمة حتى يتمكن من تعديل طلبه.",
+
+            rejectionReasonPlaceholder:
+            "اكتب سبب رفض الطلب...",
+
+            confirmReject:
+            "تأكيد الرفض",
+
+            errors: {
+            authenticationRequired:
+                "يجب تسجيل الدخول للمتابعة.",
+
+            forbidden:
+                "ليس لديك صلاحية للوصول إلى لوحة الإدارة.",
+
+            loadApplications:
+                "تعذر تحميل طلبات مقدمي الخدمات.",
+
+            loadApplication:
+                "تعذر تحميل هذا الطلب.",
+
+            updateApplication:
+                "تعذر تحديث الطلب.",
+
+            applicationNotFound:
+                "لم يتم العثور على طلب مقدم الخدمة.",
+
+            rejectionReasonRequired:
+                "أدخل سبب الرفض.",
+
+            noLongerPending:
+                "هذا الطلب لم يعد قيد المراجعة.",
+            },
       },
 
 
       status: {
-        pending:
-          "قيد الانتظار",
+  pending:
+    "قيد الانتظار",
 
-        confirmed:
-          "مؤكد",
+  confirmed:
+    "مؤكد",
 
-        onTheWay:
-          "في الطريق",
+  on_the_way:
+    "في الطريق",
 
-        inProgress:
-          "قيد التنفيذ",
+  in_progress:
+    "قيد التنفيذ",
 
-        completed:
-          "مكتمل",
+  completed:
+    "مكتمل",
 
-        cancelled:
-          "ملغي",
-      },
+  cancelled:
+    "ملغي",
+},
 
       db: {
   categories: {

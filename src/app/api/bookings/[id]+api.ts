@@ -7,19 +7,11 @@ export async function GET(
   { id }: { id: string }
 ) {
   try {
-    const url =
-      new URL(request.url);
-
-    const customerId =
-      url.searchParams.get(
-        "customerId"
-      );
-
-    if (!id || !customerId) {
+    if (!id) {
       return Response.json(
         {
           error:
-            "Booking id and customer id are required",
+            "Booking id is required",
         },
         {
           status: 400,
@@ -27,17 +19,34 @@ export async function GET(
       );
     }
 
+
+    const {
+      requireUserId,
+    } = await import(
+      "@/lib/server/auth"
+    );
+
+
+    // العميل الحقيقي من Clerk
+    const customerId =
+      await requireUserId(
+        request
+      );
+
+
     const {
       getCustomerBookingById,
     } = await import(
       "@/lib/server/booking-actions"
     );
 
+
     const booking =
       await getCustomerBookingById(
         id,
         customerId
       );
+
 
     if (!booking) {
       return Response.json(
@@ -51,24 +60,34 @@ export async function GET(
       );
     }
 
+
     return Response.json({
       booking,
     });
+
   } catch (error) {
     console.error(
       "GET BOOKING ERROR:",
       error
     );
 
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to load booking";
+
+
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to load booking",
+        error: message,
       },
       {
-        status: 500,
+        status:
+          message ===
+          "Unauthorized"
+            ? 401
+            : 500,
       }
     );
   }
@@ -84,19 +103,11 @@ export async function PATCH(
   { id }: { id: string }
 ) {
   try {
-    const body =
-      await request.json();
-
-    const {
-      customerId,
-      action,
-    } = body;
-
-    if (!customerId) {
+    if (!id) {
       return Response.json(
         {
           error:
-            "Customer id is required",
+            "Booking id is required",
         },
         {
           status: 400,
@@ -104,7 +115,34 @@ export async function PATCH(
       );
     }
 
-    if (action !== "cancel") {
+
+    const {
+      requireUserId,
+    } = await import(
+      "@/lib/server/auth"
+    );
+
+
+    // لا نقبل customerId من body
+    const customerId =
+      await requireUserId(
+        request
+      );
+
+
+    const body =
+      await request.json();
+
+
+    const {
+      action,
+    } = body;
+
+
+    if (
+      action !==
+      "cancel"
+    ) {
       return Response.json(
         {
           error:
@@ -116,11 +154,13 @@ export async function PATCH(
       );
     }
 
+
     const {
       cancelCustomerBooking,
     } = await import(
       "@/lib/server/booking-actions"
     );
+
 
     const booking =
       await cancelCustomerBooking(
@@ -128,24 +168,52 @@ export async function PATCH(
         customerId
       );
 
+
     return Response.json({
       booking,
     });
+
   } catch (error) {
     console.error(
       "UPDATE BOOKING ERROR:",
       error
     );
 
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update booking";
+
+
+    let status =
+      400;
+
+
+    if (
+      message ===
+      "Unauthorized"
+    ) {
+      status =
+        401;
+    }
+
+
+    if (
+      message ===
+      "Booking not found"
+    ) {
+      status =
+        404;
+    }
+
+
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to update booking",
+        error: message,
       },
       {
-        status: 400,
+        status,
       }
     );
   }

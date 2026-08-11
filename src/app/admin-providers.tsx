@@ -30,6 +30,11 @@ import {
   SafeAreaView,
 } from "react-native-safe-area-context";
 
+import {
+  useTranslation,
+} from "react-i18next";
+
+
 type ProviderApplication = {
   id: string;
 
@@ -69,19 +74,49 @@ type ProviderApplication = {
     string;
 };
 
+
 export default function AdminProvidersScreen() {
-  
+  const {
+    t,
+    i18n,
+  } = useTranslation();
 
-    const {
-  getToken,
-  isLoaded,
-  userId,
-} = useAuth();
 
-const loadedForUser =
-  useRef<string | null>(
-    null
-  );
+  const isArabic =
+    (
+      i18n.resolvedLanguage ||
+      i18n.language
+    ).startsWith("ar");
+
+
+  const textDirection = {
+    textAlign:
+      isArabic
+        ? ("right" as const)
+        : ("left" as const),
+  };
+
+
+  const rowDirection = {
+    flexDirection:
+      isArabic
+        ? ("row-reverse" as const)
+        : ("row" as const),
+  };
+
+
+  const {
+    getToken,
+    isLoaded,
+    userId,
+  } = useAuth();
+
+
+  const loadedForUser =
+    useRef<
+      string | null
+    >(null);
+
 
   const [
     applications,
@@ -90,15 +125,22 @@ const loadedForUser =
     ProviderApplication[]
   >([]);
 
+
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
+
 
   const [
     refreshing,
     setRefreshing,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
+
 
   const [
     error,
@@ -106,6 +148,54 @@ const loadedForUser =
   ] = useState<
     string | null
   >(null);
+
+
+  // ========================================
+  // ERROR TRANSLATION
+  // ========================================
+
+  const localizeError =
+    useCallback(
+      (
+        message:
+          | string
+          | null
+          | undefined
+      ) => {
+        const normalized =
+          message
+            ?.trim()
+            .toLowerCase();
+
+
+        if (
+          normalized ===
+          "unauthorized" ||
+          normalized ===
+          "authentication required"
+        ) {
+          return t(
+            "admin.errors.authenticationRequired"
+          );
+        }
+
+
+        if (
+          normalized ===
+          "forbidden"
+        ) {
+          return t(
+            "admin.errors.forbidden"
+          );
+        }
+
+
+        return t(
+          "admin.errors.loadApplications"
+        );
+      },
+      [t]
+    );
 
 
   // ========================================
@@ -128,18 +218,22 @@ const loadedForUser =
             );
           }
 
+
           setError(
             null
           );
 
+
           const token =
             await getToken();
+
 
           if (!token) {
             throw new Error(
               "Authentication required"
             );
           }
+
 
           const response =
             await fetch(
@@ -152,8 +246,10 @@ const loadedForUser =
               }
             );
 
+
           const data =
             await response.json();
+
 
           if (!response.ok) {
             throw new Error(
@@ -161,6 +257,7 @@ const loadedForUser =
                 "Failed to load applications"
             );
           }
+
 
           setApplications(
             Array.isArray(
@@ -170,16 +267,19 @@ const loadedForUser =
               : []
           );
 
-        } catch (error) {
+        } catch (err) {
           console.error(
             "LOAD ADMIN APPLICATIONS ERROR:",
-            error
+            err
           );
 
+
           setError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load applications"
+            localizeError(
+              err instanceof Error
+                ? err.message
+                : null
+            )
           );
 
         } finally {
@@ -192,35 +292,45 @@ const loadedForUser =
           );
         }
       },
-      [getToken]
+      [
+        getToken,
+        localizeError,
+      ]
     );
 
 
- useEffect(() => {
-  if (
-    !isLoaded ||
-    !userId
-  ) {
-    return;
-  }
+  // ========================================
+  // INITIAL LOAD
+  // ========================================
 
-  if (
-    loadedForUser.current ===
-    userId
-  ) {
-    return;
-  }
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      !userId
+    ) {
+      return;
+    }
 
-  loadedForUser.current =
-    userId;
 
-  loadApplications();
+    if (
+      loadedForUser.current ===
+      userId
+    ) {
+      return;
+    }
 
-}, [
-  isLoaded,
-  userId,
-  loadApplications,
-]);
+
+    loadedForUser.current =
+      userId;
+
+
+    loadApplications();
+
+  }, [
+    isLoaded,
+    userId,
+    loadApplications,
+  ]);
 
 
   // ========================================
@@ -236,8 +346,11 @@ const loadedForUser =
           color="#2563EB"
         />
 
+
         <Text className="mt-3 text-[#64748B]">
-          Loading applications...
+          {t(
+            "admin.loadingApplications"
+          )}
         </Text>
 
       </SafeAreaView>
@@ -252,7 +365,9 @@ const loadedForUser =
   return (
     <SafeAreaView
       className="flex-1 bg-[#F8FAFC]"
-      edges={["top"]}
+      edges={[
+        "top",
+      ]}
     >
 
       <ScrollView
@@ -280,9 +395,18 @@ const loadedForUser =
         }}
       >
 
-        {/* HEADER */}
+        {/* ==================================
+            HEADER
+        ================================== */}
 
-        <View className="mt-3 flex-row items-center">
+        <View
+          className="mt-3"
+          style={{
+            ...rowDirection,
+            alignItems:
+              "center",
+          }}
+        >
 
           <Pressable
             onPress={() =>
@@ -292,7 +416,11 @@ const loadedForUser =
           >
 
             <Ionicons
-              name="arrow-back"
+              name={
+                isArabic
+                  ? "arrow-forward"
+                  : "arrow-back"
+              }
               size={22}
               color="#0F172A"
             />
@@ -300,20 +428,47 @@ const loadedForUser =
           </Pressable>
 
 
-          <View className="ml-4 flex-1">
+          <View
+            className="flex-1"
+            style={{
+              marginStart:
+                14,
+            }}
+          >
 
-            <Text className="text-xl font-bold text-[#0F172A]">
-              Provider Applications
+            <Text
+              className="text-xl font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "admin.providerApplications"
+              )}
             </Text>
 
-            <Text className="mt-1 text-xs text-[#64748B]">
-              Review provider requests
+
+            <Text
+              className="mt-1 text-xs text-[#64748B]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "admin.reviewProviderRequests"
+              )}
             </Text>
 
           </View>
 
 
-          <View className="min-w-[38px] items-center justify-center rounded-full bg-[#EFF6FF] px-3 py-2">
+          <View
+            className="min-w-[38px] items-center justify-center rounded-full bg-[#EFF6FF] px-3 py-2"
+            style={{
+              marginStart:
+                8,
+            }}
+          >
 
             <Text className="font-bold text-[#2563EB]">
               {
@@ -326,11 +481,19 @@ const loadedForUser =
         </View>
 
 
-        {/* INFO */}
+        {/* ==================================
+            INFO
+        ================================== */}
 
         <View className="mt-6 rounded-2xl bg-[#EFF6FF] p-5">
 
-          <View className="flex-row items-center">
+          <View
+            style={{
+              ...rowDirection,
+              alignItems:
+                "center",
+            }}
+          >
 
             <Ionicons
               name="shield-checkmark-outline"
@@ -338,14 +501,36 @@ const loadedForUser =
               color="#2563EB"
             />
 
-            <View className="ml-3 flex-1">
 
-              <Text className="font-bold text-[#0F172A]">
-                Pending Applications
+            <View
+              className="flex-1"
+              style={{
+                marginStart:
+                  12,
+              }}
+            >
+
+              <Text
+                className="font-bold text-[#0F172A]"
+                style={
+                  textDirection
+                }
+              >
+                {t(
+                  "admin.pendingApplications"
+                )}
               </Text>
 
-              <Text className="mt-1 text-sm leading-5 text-[#64748B]">
-                Review the provider's information, services, prices and working hours before approval.
+
+              <Text
+                className="mt-1 text-sm leading-5 text-[#64748B]"
+                style={
+                  textDirection
+                }
+              >
+                {t(
+                  "admin.pendingApplicationsDescription"
+                )}
               </Text>
 
             </View>
@@ -355,12 +540,21 @@ const loadedForUser =
         </View>
 
 
-        {/* ERROR */}
+        {/* ==================================
+            ERROR
+        ================================== */}
 
         {error ? (
+
           <View className="mt-6 rounded-2xl bg-red-50 p-4">
 
-            <View className="flex-row items-center">
+            <View
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
 
               <Ionicons
                 name="alert-circle-outline"
@@ -368,21 +562,50 @@ const loadedForUser =
                 color="#DC2626"
               />
 
-              <Text className="ml-2 flex-1 font-semibold text-red-600">
+
+              <Text
+                className="flex-1 font-semibold text-red-600"
+                style={{
+                  marginStart:
+                    8,
+
+                  ...textDirection,
+                }}
+              >
                 {error}
               </Text>
 
             </View>
 
+
+            <Pressable
+              onPress={() =>
+                loadApplications()
+              }
+              className="mt-4 items-center rounded-xl bg-[#2563EB] py-3"
+            >
+
+              <Text className="font-bold text-white">
+                {t(
+                  "common.retry"
+                )}
+              </Text>
+
+            </Pressable>
+
           </View>
+
         ) : null}
 
 
-        {/* EMPTY */}
+        {/* ==================================
+            EMPTY
+        ================================== */}
 
         {!error &&
         applications.length ===
           0 ? (
+
           <View className="mt-12 items-center">
 
             <View className="h-20 w-20 items-center justify-center rounded-full bg-white">
@@ -395,24 +618,46 @@ const loadedForUser =
 
             </View>
 
-            <Text className="mt-5 text-lg font-bold text-[#0F172A]">
-              No pending applications
+
+            <Text
+              className="mt-5 text-lg font-bold text-[#0F172A]"
+              style={{
+                textAlign:
+                  "center",
+              }}
+            >
+              {t(
+                "admin.noApplications"
+              )}
             </Text>
 
-            <Text className="mt-2 max-w-[280px] text-center leading-5 text-[#64748B]">
-              New provider applications will appear here.
+
+            <Text
+              className="mt-2 max-w-[280px] leading-5 text-[#64748B]"
+              style={{
+                textAlign:
+                  "center",
+              }}
+            >
+              {t(
+                "admin.noApplicationsDescription"
+              )}
             </Text>
 
           </View>
+
         ) : null}
 
 
-        {/* APPLICATION CARDS */}
+        {/* ==================================
+            APPLICATION CARDS
+        ================================== */}
 
         {applications.map(
           (
             application
           ) => (
+
             <View
               key={
                 application.id
@@ -422,7 +667,13 @@ const loadedForUser =
 
               {/* NAME */}
 
-              <View className="flex-row items-center">
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
 
                 <View className="h-14 w-14 items-center justify-center rounded-full bg-[#EFF6FF]">
 
@@ -436,16 +687,34 @@ const loadedForUser =
                 </View>
 
 
-                <View className="ml-4 flex-1">
+                <View
+                  className="flex-1"
+                  style={{
+                    marginStart:
+                      14,
+                  }}
+                >
 
-                  <Text className="text-base font-bold text-[#0F172A]">
+                  <Text
+                    className="text-base font-bold text-[#0F172A]"
+                    style={
+                      textDirection
+                    }
+                  >
                     {
                       application.fullName
                     }
                   </Text>
 
 
-                  <View className="mt-2 flex-row items-center">
+                  <View
+                    className="mt-2"
+                    style={{
+                      ...rowDirection,
+                      alignItems:
+                        "center",
+                    }}
+                  >
 
                     <Ionicons
                       name="location-outline"
@@ -453,10 +722,21 @@ const loadedForUser =
                       color="#64748B"
                     />
 
-                    <Text className="ml-1 text-sm text-[#64748B]">
+
+                    <Text
+                      className="text-sm text-[#64748B]"
+                      style={{
+                        marginStart:
+                          5,
+
+                        ...textDirection,
+                      }}
+                    >
                       {
                         application.city ||
-                        "No city"
+                        t(
+                          "admin.noCity"
+                        )
                       }
                     </Text>
 
@@ -465,10 +745,18 @@ const loadedForUser =
                 </View>
 
 
-                <View className="rounded-full bg-amber-50 px-3 py-1.5">
+                <View
+                  className="rounded-full bg-amber-50 px-3 py-1.5"
+                  style={{
+                    marginStart:
+                      8,
+                  }}
+                >
 
                   <Text className="text-xs font-bold text-amber-700">
-                    Pending
+                    {t(
+                      "admin.statusPending"
+                    )}
                   </Text>
 
                 </View>
@@ -478,32 +766,80 @@ const loadedForUser =
 
               {/* DETAILS */}
 
-              <View className="mt-5 flex-row">
+              <View
+                className="mt-5"
+                style={{
+                  ...rowDirection,
+                }}
+              >
 
-                <View className="mr-2 flex-1 rounded-xl bg-[#F8FAFC] p-3">
+                <View
+                  className="flex-1 rounded-xl bg-[#F8FAFC] p-3"
+                  style={{
+                    marginEnd:
+                      8,
+                  }}
+                >
 
-                  <Text className="text-xs text-[#64748B]">
-                    Experience
+                  <Text
+                    className="text-xs text-[#64748B]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "admin.experience"
+                    )}
                   </Text>
 
-                  <Text className="mt-1 font-bold text-[#0F172A]">
-                    {
-                      application.experienceYears
-                    }{" "}
-                    years
+
+                  <Text
+                    className="mt-1 font-bold text-[#0F172A]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "admin.experienceYears",
+                      {
+                        count:
+                          application.experienceYears,
+                      }
+                    )}
                   </Text>
 
                 </View>
 
 
-                <View className="ml-2 flex-1 rounded-xl bg-[#F8FAFC] p-3">
+                <View
+                  className="flex-1 rounded-xl bg-[#F8FAFC] p-3"
+                  style={{
+                    marginStart:
+                      8,
+                  }}
+                >
 
-                  <Text className="text-xs text-[#64748B]">
-                    Status
+                  <Text
+                    className="text-xs text-[#64748B]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "admin.status"
+                    )}
                   </Text>
 
-                  <Text className="mt-1 font-bold text-amber-600">
-                    Pending
+
+                  <Text
+                    className="mt-1 font-bold text-amber-600"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "admin.statusPending"
+                    )}
                   </Text>
 
                 </View>
@@ -514,7 +850,15 @@ const loadedForUser =
               {/* CONTACT */}
 
               {application.phone ? (
-                <View className="mt-4 flex-row items-center">
+
+                <View
+                  className="mt-4"
+                  style={{
+                    ...rowDirection,
+                    alignItems:
+                      "center",
+                  }}
+                >
 
                   <Ionicons
                     name="call-outline"
@@ -522,13 +866,24 @@ const loadedForUser =
                     color="#64748B"
                   />
 
-                  <Text className="ml-2 text-sm text-[#64748B]">
+
+                  <Text
+                    className="text-sm text-[#64748B]"
+                    style={{
+                      marginStart:
+                        8,
+
+                      writingDirection:
+                        "ltr",
+                    }}
+                  >
                     {
                       application.phone
                     }
                   </Text>
 
                 </View>
+
               ) : null}
 
 
@@ -546,18 +901,37 @@ const loadedForUser =
                     },
                   });
                 }}
-                className="mt-5 flex-row items-center justify-center rounded-xl bg-[#2563EB] py-3.5"
+                className="mt-5 items-center justify-center rounded-xl bg-[#2563EB] py-3.5"
               >
 
-                <Ionicons
-                  name="eye-outline"
-                  size={19}
-                  color="white"
-                />
+                <View
+                  style={{
+                    ...rowDirection,
+                    alignItems:
+                      "center",
+                  }}
+                >
 
-                <Text className="ml-2 font-bold text-white">
-                  View Application
-                </Text>
+                  <Ionicons
+                    name="eye-outline"
+                    size={19}
+                    color="white"
+                  />
+
+
+                  <Text
+                    className="font-bold text-white"
+                    style={{
+                      marginStart:
+                        8,
+                    }}
+                  >
+                    {t(
+                      "admin.viewApplication"
+                    )}
+                  </Text>
+
+                </View>
 
               </Pressable>
 

@@ -236,12 +236,16 @@ export const getProviderApplicationServices =
         .select({
           serviceId: services.id,
           serviceName: services.name,
+          serviceSlug: services.slug,
+
           serviceIcon: services.icon,
+
           serviceDescription:
             services.description,
 
           categoryId: categories.id,
           categoryName: categories.name,
+          categorySlug: categories.slug,
         })
         .from(services)
 

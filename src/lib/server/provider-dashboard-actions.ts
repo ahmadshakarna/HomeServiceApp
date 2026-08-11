@@ -125,6 +125,9 @@ export const getProviderDashboard =
             name:
               services.name,
 
+            slug:
+              services.slug,
+
             icon:
               services.icon,
           },
@@ -135,6 +138,9 @@ export const getProviderDashboard =
 
             name:
               categories.name,
+
+            slug:
+              categories.slug,
           },
         })
 

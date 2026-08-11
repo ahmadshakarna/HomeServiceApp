@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -23,6 +24,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 
 // ========================================
@@ -56,6 +58,7 @@ type ProviderApplication = {
 type AvailableService = {
   serviceId: string;
   serviceName: string;
+  serviceSlug: string;
 
   serviceIcon:
     string | null;
@@ -65,6 +68,7 @@ type AvailableService = {
 
   categoryId: string;
   categoryName: string;
+  categorySlug: string;
 };
 
 
@@ -78,10 +82,7 @@ type SelectedServiceMap = {
 
 type WorkingDay = {
   dayOfWeek: number;
-  name: string;
-
   isAvailable: boolean;
-
   startTime: string;
   endTime: string;
 };
@@ -94,54 +95,26 @@ type WorkingDay = {
 // ========================================
 
 const WEEK_DAYS = [
-  {
-    dayOfWeek: 0,
-    name: "Sunday",
-  },
-  {
-    dayOfWeek: 1,
-    name: "Monday",
-  },
-  {
-    dayOfWeek: 2,
-    name: "Tuesday",
-  },
-  {
-    dayOfWeek: 3,
-    name: "Wednesday",
-  },
-  {
-    dayOfWeek: 4,
-    name: "Thursday",
-  },
-  {
-    dayOfWeek: 5,
-    name: "Friday",
-  },
-  {
-    dayOfWeek: 6,
-    name: "Saturday",
-  },
+  { dayOfWeek: 0 },
+  { dayOfWeek: 1 },
+  { dayOfWeek: 2 },
+  { dayOfWeek: 3 },
+  { dayOfWeek: 4 },
+  { dayOfWeek: 5 },
+  { dayOfWeek: 6 },
 ];
 
 
 const createDefaultSchedule =
-  (): WorkingDay[] => {
-    return WEEK_DAYS.map(
+  (): WorkingDay[] =>
+    WEEK_DAYS.map(
       (day) => ({
         ...day,
-
-        isAvailable:
-          false,
-
-        startTime:
-          "09:00",
-
-        endTime:
-          "17:00",
+        isAvailable: false,
+        startTime: "09:00",
+        endTime: "17:00",
       })
     );
-  };
 
 
 // ========================================
@@ -157,23 +130,60 @@ export default function BecomeProviderScreen() {
     isLoaded,
   } = useAuth();
 
+  const {
+    t,
+    i18n,
+  } = useTranslation();
+
+
+  // ========================================
+  // LANGUAGE
+  // ========================================
+
+  const isArabic =
+    (
+      i18n.resolvedLanguage ||
+      i18n.language
+    ).startsWith("ar");
+
+
+  const textDirection = {
+    textAlign:
+      isArabic
+        ? ("right" as const)
+        : ("left" as const),
+  };
+
+
+  const rowDirection = {
+    flexDirection:
+      isArabic
+        ? ("row-reverse" as const)
+        : ("row" as const),
+  };
+
+
+  // ========================================
+  // LOAD GUARD
+  // ========================================
+
   const loadedForUser =
     useRef<string | null>(
       null
     );
 
-    // ====================================
-    // states
-    // ====================================
-    const [
-  isSubmitting,
-  setIsSubmitting,
-] = useState(false);
-
 
   // ========================================
+  // STATES
+  // ========================================
+
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
+
+
   // PERSONAL INFORMATION
-  // ========================================
 
   const [
     fullName,
@@ -206,9 +216,7 @@ export default function BecomeProviderScreen() {
   ] = useState("");
 
 
-  // ========================================
   // APPLICATION
-  // ========================================
 
   const [
     application,
@@ -234,9 +242,7 @@ export default function BecomeProviderScreen() {
   ] = useState(false);
 
 
-  // ========================================
   // SERVICES
-  // ========================================
 
   const [
     availableServices,
@@ -269,9 +275,7 @@ export default function BecomeProviderScreen() {
   ] = useState(false);
 
 
-  // ========================================
   // WORKING HOURS
-  // ========================================
 
   const [
     workingHours,
@@ -299,9 +303,7 @@ export default function BecomeProviderScreen() {
   ] = useState(false);
 
 
-  // ========================================
   // ERROR
-  // ========================================
 
   const [
     error,
@@ -309,6 +311,234 @@ export default function BecomeProviderScreen() {
   ] = useState<
     string | null
   >(null);
+
+
+  // ========================================
+  // TRANSLATION HELPERS
+  // ========================================
+
+  const getServiceName = (
+    item: AvailableService
+  ) =>
+    t(
+      `db.services.${item.serviceSlug}.name`,
+      {
+        defaultValue:
+          item.serviceName,
+      }
+    );
+
+
+  const getServiceDescription = (
+    item: AvailableService
+  ) => {
+    if (
+      !item.serviceDescription
+    ) {
+      return null;
+    }
+
+    return t(
+      `db.services.${item.serviceSlug}.description`,
+      {
+        defaultValue:
+          item.serviceDescription,
+      }
+    );
+  };
+
+
+  const getCategoryName = (
+    slug: string,
+    name: string
+  ) =>
+    t(
+      `db.categories.${slug}.name`,
+      {
+        defaultValue:
+          name,
+      }
+    );
+
+
+  const getDayKey = (
+    dayOfWeek: number
+  ) => {
+    const keys = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+
+    return keys[
+      dayOfWeek
+    ];
+  };
+
+
+  const getDayName = (
+    dayOfWeek: number
+  ) =>
+    t(
+      `weekdays.${getDayKey(
+        dayOfWeek
+      )}`
+    );
+
+
+  const localizeServerError =
+    useCallback(
+      (
+        message:
+          | string
+          | null
+          | undefined,
+        fallbackKey:
+          string
+      ) => {
+        if (!message) {
+          return t(
+            fallbackKey
+          );
+        }
+
+        const normalized =
+          message
+            .trim()
+            .toLowerCase();
+
+        const map:
+          Record<
+            string,
+            string
+          > = {
+          "authentication required":
+            "becomeProvider.errors.authenticationRequired",
+
+          "unauthorized":
+            "becomeProvider.errors.authenticationRequired",
+
+          "full name is required":
+            "becomeProvider.errors.fullNameRequired",
+
+          "full name is required.":
+            "becomeProvider.errors.fullNameRequired",
+
+          "phone number is required":
+            "becomeProvider.errors.phoneRequired",
+
+          "phone number is required.":
+            "becomeProvider.errors.phoneRequired",
+
+          "city is required":
+            "becomeProvider.errors.cityRequired",
+
+          "city is required.":
+            "becomeProvider.errors.cityRequired",
+
+          "invalid experience years":
+            "becomeProvider.errors.invalidExperience",
+
+          "please enter valid years of experience.":
+            "becomeProvider.errors.invalidExperience",
+
+          "select at least one service":
+            "becomeProvider.errors.selectService",
+
+          "select at least one service.":
+            "becomeProvider.errors.selectService",
+
+          "enter a valid price for every service":
+            "becomeProvider.errors.invalidPrice",
+
+          "enter a valid price for every selected service.":
+            "becomeProvider.errors.invalidPrice",
+
+          "select at least one working day":
+            "becomeProvider.errors.selectWorkingDay",
+
+          "select at least one working day.":
+            "becomeProvider.errors.selectWorkingDay",
+
+          "save your services first.":
+            "becomeProvider.errors.saveServicesFirst",
+
+          "save your working hours first.":
+            "becomeProvider.errors.saveHoursFirst",
+
+          "save your personal information first":
+            "becomeProvider.errors.savePersonalFirst",
+
+          "application is already under review":
+            "becomeProvider.errors.alreadyPending",
+
+          "provider is already approved":
+            "becomeProvider.errors.alreadyApproved",
+
+          "provider account is already approved":
+            "becomeProvider.errors.alreadyApproved",
+
+          "provider application not found":
+            "becomeProvider.errors.applicationNotFound",
+
+          "complete your working hours":
+            "becomeProvider.errors.completeHours",
+
+          "all services must have a valid price":
+            "becomeProvider.errors.invalidPrice",
+
+          "one or more services are invalid":
+            "becomeProvider.errors.invalidService",
+        };
+
+
+        const key =
+          map[
+            normalized
+          ];
+
+        if (key) {
+          return t(
+            key
+          );
+        }
+
+
+        if (
+          normalized.includes(
+            "end time must be after start time"
+          )
+        ) {
+          return t(
+            "becomeProvider.errors.endAfterStart"
+          );
+        }
+
+
+        if (
+          normalized.includes(
+            "valid time"
+          ) ||
+          normalized.includes(
+            "invalid working time"
+          )
+        ) {
+          return t(
+            "becomeProvider.errors.invalidTime"
+          );
+        }
+
+
+        return t(
+          fallbackKey
+        );
+      },
+      [t]
+    );
 
 
   // ========================================
@@ -328,6 +558,7 @@ export default function BecomeProviderScreen() {
             );
           }
 
+
           const response =
             await fetch(
               "/api/provider-application/services",
@@ -339,8 +570,10 @@ export default function BecomeProviderScreen() {
               }
             );
 
+
           const data =
             await response.json();
+
 
           if (!response.ok) {
             throw new Error(
@@ -349,12 +582,14 @@ export default function BecomeProviderScreen() {
             );
           }
 
+
           const servicesData =
             Array.isArray(
               data.availableServices
             )
               ? data.availableServices
               : [];
+
 
           const selectedData =
             Array.isArray(
@@ -363,12 +598,15 @@ export default function BecomeProviderScreen() {
               ? data.selectedServices
               : [];
 
+
           setAvailableServices(
             servicesData
           );
 
+
           const initial:
             SelectedServiceMap = {};
+
 
           for (
             const service of
@@ -384,6 +622,7 @@ export default function BecomeProviderScreen() {
                 "",
             };
           }
+
 
           for (
             const service of
@@ -403,6 +642,7 @@ export default function BecomeProviderScreen() {
             };
           }
 
+
           setSelectedServices(
             initial
           );
@@ -411,26 +651,34 @@ export default function BecomeProviderScreen() {
             true
           );
 
-          // إذا عنده خدمات محفوظة من قبل
           setServicesSaved(
             selectedData.length >
               0
           );
 
-        } catch (error) {
+        } catch (err) {
           console.error(
             "LOAD SERVICES ERROR:",
-            error
+            err
           );
 
+          const message =
+            err instanceof Error
+              ? err.message
+              : null;
+
           setError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load services"
+            localizeServerError(
+              message,
+              "becomeProvider.errors.loadServices"
+            )
           );
         }
       },
-      [getToken]
+      [
+        getToken,
+        localizeServerError,
+      ]
     );
 
 
@@ -451,6 +699,7 @@ export default function BecomeProviderScreen() {
             );
           }
 
+
           const response =
             await fetch(
               "/api/provider-application/availability",
@@ -462,8 +711,10 @@ export default function BecomeProviderScreen() {
               }
             );
 
+
           const data =
             await response.json();
+
 
           if (!response.ok) {
             throw new Error(
@@ -472,12 +723,14 @@ export default function BecomeProviderScreen() {
             );
           }
 
+
           const rows =
             Array.isArray(
               data.availability
             )
               ? data.availability
               : [];
+
 
           const schedule =
             WEEK_DAYS.map(
@@ -493,8 +746,10 @@ export default function BecomeProviderScreen() {
                       day.dayOfWeek
                   );
 
+
                 return {
-                  ...day,
+                  dayOfWeek:
+                    day.dayOfWeek,
 
                   isAvailable:
                     existing
@@ -528,6 +783,7 @@ export default function BecomeProviderScreen() {
               }
             );
 
+
           setWorkingHours(
             schedule
           );
@@ -540,20 +796,29 @@ export default function BecomeProviderScreen() {
             rows.length > 0
           );
 
-        } catch (error) {
+        } catch (err) {
           console.error(
             "LOAD AVAILABILITY ERROR:",
-            error
+            err
           );
 
+          const message =
+            err instanceof Error
+              ? err.message
+              : null;
+
           setError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load working hours"
+            localizeServerError(
+              message,
+              "becomeProvider.errors.loadHours"
+            )
           );
         }
       },
-      [getToken]
+      [
+        getToken,
+        localizeServerError,
+      ]
     );
 
 
@@ -569,7 +834,7 @@ export default function BecomeProviderScreen() {
       return;
     }
 
-    // Prevent reload while typing
+
     if (
       loadedForUser.current ===
       user.id
@@ -577,8 +842,10 @@ export default function BecomeProviderScreen() {
       return;
     }
 
+
     loadedForUser.current =
       user.id;
+
 
     const loadApplication =
       async () => {
@@ -591,14 +858,17 @@ export default function BecomeProviderScreen() {
             null
           );
 
+
           const token =
             await getToken();
+
 
           if (!token) {
             throw new Error(
               "Authentication required"
             );
           }
+
 
           const response =
             await fetch(
@@ -611,8 +881,10 @@ export default function BecomeProviderScreen() {
               }
             );
 
+
           const data =
             await response.json();
+
 
           if (!response.ok) {
             throw new Error(
@@ -621,19 +893,17 @@ export default function BecomeProviderScreen() {
             );
           }
 
+
           const existing =
             data.application as
               | ProviderApplication
               | null;
 
+
           setApplication(
             existing
           );
 
-
-          // ==================================
-          // EXISTING APPLICATION
-          // ==================================
 
           if (existing) {
             setFullName(
@@ -680,13 +950,10 @@ export default function BecomeProviderScreen() {
               await loadAvailability();
             }
 
+
             return;
           }
 
-
-          // ==================================
-          // NEW APPLICATION
-          // ==================================
 
           setFullName(
             user.fullName ||
@@ -700,16 +967,22 @@ export default function BecomeProviderScreen() {
               ""
           );
 
-        } catch (error) {
+        } catch (err) {
           console.error(
             "LOAD PROVIDER APPLICATION ERROR:",
-            error
+            err
           );
 
+          const message =
+            err instanceof Error
+              ? err.message
+              : null;
+
           setError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load application"
+            localizeServerError(
+              message,
+              "becomeProvider.errors.loadApplication"
+            )
           );
 
           loadedForUser.current =
@@ -722,14 +995,20 @@ export default function BecomeProviderScreen() {
         }
       };
 
+
     loadApplication();
 
   }, [
     isLoaded,
     user?.id,
+    user?.fullName,
+    user
+      ?.primaryEmailAddress
+      ?.emailAddress,
     getToken,
     loadServices,
     loadAvailability,
+    localizeServerError,
   ]);
 
 
@@ -741,33 +1020,43 @@ export default function BecomeProviderScreen() {
     async () => {
       if (!fullName.trim()) {
         setError(
-          "Full name is required."
+          t(
+            "becomeProvider.errors.fullNameRequired"
+          )
         );
 
         return;
       }
+
 
       if (!phone.trim()) {
         setError(
-          "Phone number is required."
+          t(
+            "becomeProvider.errors.phoneRequired"
+          )
         );
 
         return;
       }
+
 
       if (!city.trim()) {
         setError(
-          "City is required."
+          t(
+            "becomeProvider.errors.cityRequired"
+          )
         );
 
         return;
       }
+
 
       const years =
         Number(
           experienceYears ||
             0
         );
+
 
       if (
         !Number.isInteger(
@@ -777,11 +1066,14 @@ export default function BecomeProviderScreen() {
         years > 60
       ) {
         setError(
-          "Please enter valid years of experience."
+          t(
+            "becomeProvider.errors.invalidExperience"
+          )
         );
 
         return;
       }
+
 
       try {
         setIsSaving(
@@ -796,14 +1088,17 @@ export default function BecomeProviderScreen() {
           null
         );
 
+
         const token =
           await getToken();
+
 
         if (!token) {
           throw new Error(
             "Authentication required"
           );
         }
+
 
         const response =
           await fetch(
@@ -827,15 +1122,16 @@ export default function BecomeProviderScreen() {
                   email,
                   city,
                   bio,
-
                   experienceYears:
                     years,
                 }),
             }
           );
 
+
         const data =
           await response.json();
+
 
         if (!response.ok) {
           throw new Error(
@@ -843,6 +1139,7 @@ export default function BecomeProviderScreen() {
               "Failed to save application"
           );
         }
+
 
         setApplication(
           data.application
@@ -852,24 +1149,25 @@ export default function BecomeProviderScreen() {
           true
         );
 
-        console.log(
-          "PROVIDER DRAFT SAVED:",
-          data.application
-        );
 
-        // Provider now exists
         await loadServices();
 
-      } catch (error) {
+      } catch (err) {
         console.error(
           "SAVE PROVIDER APPLICATION ERROR:",
-          error
+          err
         );
 
+        const message =
+          err instanceof Error
+            ? err.message
+            : null;
+
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to save application"
+          localizeServerError(
+            message,
+            "becomeProvider.errors.saveApplication"
+          )
         );
 
       } finally {
@@ -890,6 +1188,7 @@ export default function BecomeProviderScreen() {
     setServicesSaved(
       false
     );
+
 
     setSelectedServices(
       (current) => ({
@@ -931,9 +1230,11 @@ export default function BecomeProviderScreen() {
           "$1"
         );
 
+
     setServicesSaved(
       false
     );
+
 
     setSelectedServices(
       (current) => ({
@@ -966,6 +1267,7 @@ export default function BecomeProviderScreen() {
           false
         );
 
+
         const selections =
           availableServices
             .filter(
@@ -982,6 +1284,7 @@ export default function BecomeProviderScreen() {
                       service.serviceId
                     ]?.price
                   );
+
 
                 return {
                   serviceId:
@@ -1033,6 +1336,7 @@ export default function BecomeProviderScreen() {
         const token =
           await getToken();
 
+
         if (!token) {
           throw new Error(
             "Authentication required"
@@ -1081,25 +1385,24 @@ export default function BecomeProviderScreen() {
         );
 
 
-        console.log(
-          "PROVIDER SERVICES SAVED:",
-          data
-        );
-
-
-        // Load Step 3
         await loadAvailability();
 
-      } catch (error) {
+      } catch (err) {
         console.error(
           "SAVE PROVIDER SERVICES ERROR:",
-          error
+          err
         );
 
+        const message =
+          err instanceof Error
+            ? err.message
+            : null;
+
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to save services"
+          localizeServerError(
+            message,
+            "becomeProvider.errors.saveServices"
+          )
         );
 
       } finally {
@@ -1120,6 +1423,7 @@ export default function BecomeProviderScreen() {
     setAvailabilitySaved(
       false
     );
+
 
     setWorkingHours(
       (current) =>
@@ -1163,9 +1467,11 @@ export default function BecomeProviderScreen() {
           5
         );
 
+
     setAvailabilitySaved(
       false
     );
+
 
     setWorkingHours(
       (current) =>
@@ -1234,9 +1540,19 @@ export default function BecomeProviderScreen() {
               day.endTime
             )
           ) {
-            throw new Error(
-              `Enter a valid time for ${day.name}. Example: 09:00`
+            setError(
+              t(
+                "becomeProvider.errors.invalidTimeForDay",
+                {
+                  day:
+                    getDayName(
+                      day.dayOfWeek
+                    ),
+                }
+              )
             );
+
+            return;
           }
 
 
@@ -1244,9 +1560,19 @@ export default function BecomeProviderScreen() {
             day.startTime >=
             day.endTime
           ) {
-            throw new Error(
-              `End time must be after start time for ${day.name}.`
+            setError(
+              t(
+                "becomeProvider.errors.endAfterStartForDay",
+                {
+                  day:
+                    getDayName(
+                      day.dayOfWeek
+                    ),
+                }
+              )
             );
+
+            return;
           }
         }
 
@@ -1325,22 +1651,22 @@ export default function BecomeProviderScreen() {
           true
         );
 
-
-        console.log(
-          "PROVIDER AVAILABILITY SAVED:",
-          data
-        );
-
-      } catch (error) {
+      } catch (err) {
         console.error(
           "SAVE PROVIDER AVAILABILITY ERROR:",
-          error
+          err
         );
 
+        const message =
+          err instanceof Error
+            ? err.message
+            : null;
+
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to save working hours"
+          localizeServerError(
+            message,
+            "becomeProvider.errors.saveHours"
+          )
         );
 
       } finally {
@@ -1349,110 +1675,149 @@ export default function BecomeProviderScreen() {
         );
       }
     };
-   // ========================================
-// SUBMIT APPLICATION
-// ========================================
 
-const handleSubmitApplication =
-  async () => {
-    try {
-      setError(null);
 
-      if (!servicesSaved) {
-        throw new Error(
-          "Save your services first."
+  // ========================================
+  // SUBMIT APPLICATION
+  // ========================================
+
+  const handleSubmitApplication =
+    async () => {
+      try {
+        setError(
+          null
+        );
+
+
+        if (!servicesSaved) {
+          throw new Error(
+            "Save your services first."
+          );
+        }
+
+
+        if (
+          !availabilitySaved
+        ) {
+          throw new Error(
+            "Save your working hours first."
+          );
+        }
+
+
+        setIsSubmitting(
+          true
+        );
+
+
+        const token =
+          await getToken();
+
+
+        if (!token) {
+          throw new Error(
+            "Authentication required"
+          );
+        }
+
+
+        const response =
+          await fetch(
+            "/api/provider-application/submit",
+            {
+              method:
+                "POST",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              "Failed to submit application"
+          );
+        }
+
+
+        setApplication(
+          data.application
+        );
+
+      } catch (err) {
+        console.error(
+          "SUBMIT APPLICATION ERROR:",
+          err
+        );
+
+        const message =
+          err instanceof Error
+            ? err.message
+            : null;
+
+        setError(
+          localizeServerError(
+            message,
+            "becomeProvider.errors.submitApplication"
+          )
+        );
+
+      } finally {
+        setIsSubmitting(
+          false
         );
       }
+    };
 
-      if (
-        !availabilitySaved
-      ) {
-        throw new Error(
-          "Save your working hours first."
-        );
-      }
 
-      setIsSubmitting(
-        true
-      );
+  // ========================================
+  // CATEGORY GROUPS
+  // ========================================
 
-      const token =
-        await getToken();
-
-      if (!token) {
-        throw new Error(
-          "Authentication required"
-        );
-      }
-
-      const response =
-        await fetch(
-          "/api/provider-application/submit",
+  const categoryGroups =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
           {
-            method:
-              "POST",
+            slug: string;
+            name: string;
+          }
+        >();
 
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
+
+      for (
+        const item of
+        availableServices
+      ) {
+        map.set(
+          item.categorySlug,
+          {
+            slug:
+              item.categorySlug,
+
+            name:
+              item.categoryName,
           }
         );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Failed to submit application"
-        );
       }
 
-      console.log(
-        "PROVIDER APPLICATION SUBMITTED:",
-        data.application
+
+      return Array.from(
+        map.values()
       );
 
-      // مهم جدًا
-      // هذا سيجعل الصفحة تعرض
-      // Application Pending تلقائيًا
-      setApplication(
-        data.application
-      );
-
-    } catch (error) {
-      console.error(
-        "SUBMIT APPLICATION ERROR:",
-        error
-      );
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to submit application"
-      );
-
-    } finally {
-      setIsSubmitting(
-        false
-      );
-    }
-  };
-
-  // ========================================
-  // CATEGORY NAMES
-  // ========================================
-
-  const categoryNames =
-    Array.from(
-      new Set(
-        availableServices.map(
-          (item) =>
-            item.categoryName
-        )
-      )
-    );
+    }, [
+      availableServices,
+    ]);
 
 
   // ========================================
@@ -1468,7 +1833,9 @@ const handleSubmitApplication =
         />
 
         <Text className="mt-3 text-[#64748B]">
-          Loading application...
+          {t(
+            "becomeProvider.loading"
+          )}
         </Text>
       </SafeAreaView>
     );
@@ -1486,20 +1853,33 @@ const handleSubmitApplication =
   ) {
     return (
       <SafeAreaView className="flex-1 bg-[#F8FAFC] px-5">
+
         <Pressable
           onPress={() =>
             router.back()
           }
           className="mt-3 h-11 w-11 items-center justify-center rounded-full bg-white"
+          style={{
+            alignSelf:
+              isArabic
+                ? "flex-end"
+                : "flex-start",
+          }}
         >
           <Ionicons
-            name="arrow-back"
+            name={
+              isArabic
+                ? "arrow-forward"
+                : "arrow-back"
+            }
             size={22}
             color="#0F172A"
           />
         </Pressable>
 
+
         <View className="flex-1 items-center justify-center pb-20">
+
           <View className="h-24 w-24 items-center justify-center rounded-full bg-amber-50">
             <Ionicons
               name="time-outline"
@@ -1508,14 +1888,34 @@ const handleSubmitApplication =
             />
           </View>
 
-          <Text className="mt-6 text-2xl font-bold text-[#0F172A]">
-            Application Pending
+
+          <Text
+            className="mt-6 text-2xl font-bold text-[#0F172A]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "becomeProvider.pendingTitle"
+            )}
           </Text>
 
-          <Text className="mt-3 max-w-[310px] text-center leading-6 text-[#64748B]">
-            Your provider application is currently under review.
+
+          <Text
+            className="mt-3 max-w-[310px] leading-6 text-[#64748B]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "becomeProvider.pendingDescription"
+            )}
           </Text>
+
         </View>
+
       </SafeAreaView>
     );
   }
@@ -1532,20 +1932,33 @@ const handleSubmitApplication =
   ) {
     return (
       <SafeAreaView className="flex-1 bg-[#F8FAFC] px-5">
+
         <Pressable
           onPress={() =>
             router.back()
           }
           className="mt-3 h-11 w-11 items-center justify-center rounded-full bg-white"
+          style={{
+            alignSelf:
+              isArabic
+                ? "flex-end"
+                : "flex-start",
+          }}
         >
           <Ionicons
-            name="arrow-back"
+            name={
+              isArabic
+                ? "arrow-forward"
+                : "arrow-back"
+            }
             size={22}
             color="#0F172A"
           />
         </Pressable>
 
+
         <View className="flex-1 items-center justify-center pb-20">
+
           <View className="h-24 w-24 items-center justify-center rounded-full bg-green-50">
             <Ionicons
               name="checkmark-circle"
@@ -1554,14 +1967,34 @@ const handleSubmitApplication =
             />
           </View>
 
-          <Text className="mt-6 text-2xl font-bold text-[#0F172A]">
-            You're a Provider
+
+          <Text
+            className="mt-6 text-2xl font-bold text-[#0F172A]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "becomeProvider.approvedTitle"
+            )}
           </Text>
 
-          <Text className="mt-3 text-center leading-6 text-[#64748B]">
-            Your provider account has been approved.
+
+          <Text
+            className="mt-3 leading-6 text-[#64748B]"
+            style={{
+              textAlign:
+                "center",
+            }}
+          >
+            {t(
+              "becomeProvider.approvedDescription"
+            )}
           </Text>
+
         </View>
+
       </SafeAreaView>
     );
   }
@@ -1574,8 +2007,11 @@ const handleSubmitApplication =
   return (
     <SafeAreaView
       className="flex-1 bg-[#F8FAFC]"
-      edges={["top"]}
+      edges={[
+        "top",
+      ]}
     >
+
       <ScrollView
         showsVerticalScrollIndicator={
           false
@@ -1594,7 +2030,15 @@ const handleSubmitApplication =
             HEADER
         ================================== */}
 
-        <View className="mt-3 flex-row items-center">
+        <View
+          className="mt-3"
+          style={{
+            ...rowDirection,
+            alignItems:
+              "center",
+          }}
+        >
+
           <Pressable
             onPress={() =>
               router.back()
@@ -1602,21 +2046,48 @@ const handleSubmitApplication =
             className="h-11 w-11 items-center justify-center rounded-full bg-white"
           >
             <Ionicons
-              name="arrow-back"
+              name={
+                isArabic
+                  ? "arrow-forward"
+                  : "arrow-back"
+              }
               size={22}
               color="#0F172A"
             />
           </Pressable>
 
-          <View className="ml-4">
-            <Text className="text-xl font-bold text-[#0F172A]">
-              Become a Provider
+
+          <View
+            className="flex-1"
+            style={{
+              marginStart:
+                14,
+            }}
+          >
+            <Text
+              className="text-xl font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "becomeProvider.title"
+              )}
             </Text>
 
-            <Text className="mt-1 text-xs text-[#64748B]">
-              Complete your provider profile
+
+            <Text
+              className="mt-1 text-xs text-[#64748B]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "becomeProvider.subtitle"
+              )}
             </Text>
           </View>
+
         </View>
 
 
@@ -1625,19 +2096,46 @@ const handleSubmitApplication =
         ================================== */}
 
         <View className="mt-6 rounded-2xl bg-[#EFF6FF] p-5">
-          <Ionicons
-            name="briefcase-outline"
-            size={28}
-            color="#2563EB"
-          />
 
-          <Text className="mt-3 text-lg font-bold text-[#0F172A]">
-            Start offering services
+          <View
+            style={{
+              alignItems:
+                isArabic
+                  ? "flex-end"
+                  : "flex-start",
+            }}
+          >
+            <Ionicons
+              name="briefcase-outline"
+              size={28}
+              color="#2563EB"
+            />
+          </View>
+
+
+          <Text
+            className="mt-3 text-lg font-bold text-[#0F172A]"
+            style={
+              textDirection
+            }
+          >
+            {t(
+              "becomeProvider.introTitle"
+            )}
           </Text>
 
-          <Text className="mt-2 leading-6 text-[#64748B]">
-            Complete your information, choose your services, set your prices and working hours.
+
+          <Text
+            className="mt-2 leading-6 text-[#64748B]"
+            style={
+              textDirection
+            }
+          >
+            {t(
+              "becomeProvider.introDescription"
+            )}
           </Text>
+
         </View>
 
 
@@ -1648,31 +2146,70 @@ const handleSubmitApplication =
         {application
           ?.approvalStatus ===
         "rejected" ? (
+
           <View className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4">
-            <View className="flex-row items-center">
+
+            <View
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
               <Ionicons
                 name="alert-circle-outline"
                 size={21}
                 color="#DC2626"
               />
 
-              <Text className="ml-2 font-bold text-red-700">
-                Previous application rejected
+
+              <Text
+                className="flex-1 font-bold text-red-700"
+                style={{
+                  marginStart:
+                    8,
+
+                  ...textDirection,
+                }}
+              >
+                {t(
+                  "becomeProvider.rejectedTitle"
+                )}
               </Text>
             </View>
 
-            {application.rejectionReason ? (
-              <Text className="mt-2 leading-5 text-red-600">
+
+            {application
+              .rejectionReason ? (
+
+              <Text
+                className="mt-2 leading-5 text-red-600"
+                style={
+                  textDirection
+                }
+              >
                 {
-                  application.rejectionReason
+                  application
+                    .rejectionReason
                 }
               </Text>
+
             ) : null}
 
-            <Text className="mt-2 text-sm text-red-600">
-              Update your information and apply again.
+
+            <Text
+              className="mt-2 text-sm text-red-600"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "becomeProvider.rejectedDescription"
+              )}
             </Text>
+
           </View>
+
         ) : null}
 
 
@@ -1680,27 +2217,65 @@ const handleSubmitApplication =
             STEP 1
         ================================== */}
 
-        <View className="mt-8 flex-row items-center">
+        <View
+          className="mt-8"
+          style={{
+            ...rowDirection,
+            alignItems:
+              "center",
+          }}
+        >
           <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF]">
             <Text className="font-bold text-[#2563EB]">
               1
             </Text>
           </View>
 
-          <View className="ml-3">
-            <Text className="text-lg font-bold text-[#0F172A]">
-              Personal Information
+
+          <View
+            className="flex-1"
+            style={{
+              marginStart:
+                12,
+            }}
+          >
+            <Text
+              className="text-lg font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "becomeProvider.personalTitle"
+              )}
             </Text>
 
-            <Text className="mt-1 text-xs text-[#64748B]">
-              Tell us about yourself
+
+            <Text
+              className="mt-1 text-xs text-[#64748B]"
+              style={
+                textDirection
+              }
+            >
+              {t(
+                "becomeProvider.personalSubtitle"
+              )}
             </Text>
           </View>
         </View>
 
 
-        <Text className="mt-6 font-bold text-[#0F172A]">
-          Full Name *
+        {/* FULL NAME */}
+
+        <Text
+          className="mt-6 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.fullName"
+          )}
         </Text>
 
         <TextInput
@@ -1708,14 +2283,36 @@ const handleSubmitApplication =
           onChangeText={
             setFullName
           }
-          placeholder="Full name"
+          placeholder={t(
+            "becomeProvider.fullNamePlaceholder"
+          )}
           placeholderTextColor="#94A3B8"
           className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              isArabic
+                ? "right"
+                : "left",
+
+            writingDirection:
+              isArabic
+                ? "rtl"
+                : "ltr",
+          }}
         />
 
 
-        <Text className="mt-5 font-bold text-[#0F172A]">
-          Phone Number *
+        {/* PHONE */}
+
+        <Text
+          className="mt-5 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.phone"
+          )}
         </Text>
 
         <TextInput
@@ -1727,11 +2324,27 @@ const handleSubmitApplication =
           placeholder="059..."
           placeholderTextColor="#94A3B8"
           className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              "left",
+
+            writingDirection:
+              "ltr",
+          }}
         />
 
 
-        <Text className="mt-5 font-bold text-[#0F172A]">
-          Email
+        {/* EMAIL */}
+
+        <Text
+          className="mt-5 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.email"
+          )}
         </Text>
 
         <TextInput
@@ -1741,14 +2354,32 @@ const handleSubmitApplication =
           }
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholder="Email"
+          placeholder={t(
+            "becomeProvider.emailPlaceholder"
+          )}
           placeholderTextColor="#94A3B8"
           className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              "left",
+
+            writingDirection:
+              "ltr",
+          }}
         />
 
 
-        <Text className="mt-5 font-bold text-[#0F172A]">
-          City *
+        {/* CITY */}
+
+        <Text
+          className="mt-5 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.city"
+          )}
         </Text>
 
         <TextInput
@@ -1756,14 +2387,36 @@ const handleSubmitApplication =
           onChangeText={
             setCity
           }
-          placeholder="Bethlehem"
+          placeholder={t(
+            "becomeProvider.cityPlaceholder"
+          )}
           placeholderTextColor="#94A3B8"
           className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              isArabic
+                ? "right"
+                : "left",
+
+            writingDirection:
+              isArabic
+                ? "rtl"
+                : "ltr",
+          }}
         />
 
 
-        <Text className="mt-5 font-bold text-[#0F172A]">
-          Years of Experience
+        {/* EXPERIENCE */}
+
+        <Text
+          className="mt-5 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.experience"
+          )}
         </Text>
 
         <TextInput
@@ -1777,11 +2430,27 @@ const handleSubmitApplication =
           placeholder="0"
           placeholderTextColor="#94A3B8"
           className="mt-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              "left",
+
+            writingDirection:
+              "ltr",
+          }}
         />
 
 
-        <Text className="mt-5 font-bold text-[#0F172A]">
-          About You
+        {/* BIO */}
+
+        <Text
+          className="mt-5 font-bold text-[#0F172A]"
+          style={
+            textDirection
+          }
+        >
+          {t(
+            "becomeProvider.aboutYou"
+          )}
         </Text>
 
         <TextInput
@@ -1791,24 +2460,57 @@ const handleSubmitApplication =
           }
           multiline
           textAlignVertical="top"
-          placeholder="Tell customers about your experience..."
+          placeholder={t(
+            "becomeProvider.bioPlaceholder"
+          )}
           placeholderTextColor="#94A3B8"
           className="mt-3 min-h-[130px] rounded-2xl border border-[#E2E8F0] bg-white p-4 text-[#0F172A]"
+          style={{
+            textAlign:
+              isArabic
+                ? "right"
+                : "left",
+
+            writingDirection:
+              isArabic
+                ? "rtl"
+                : "ltr",
+          }}
         />
 
 
         {personalSaved ? (
-          <View className="mt-5 flex-row items-center rounded-xl bg-green-50 p-4">
+
+          <View
+            className="mt-5 rounded-xl bg-green-50 p-4"
+            style={{
+              ...rowDirection,
+              alignItems:
+                "center",
+            }}
+          >
             <Ionicons
               name="checkmark-circle"
               size={20}
               color="#16A34A"
             />
 
-            <Text className="ml-2 flex-1 font-semibold text-green-700">
-              Personal information saved.
+
+            <Text
+              className="flex-1 font-semibold text-green-700"
+              style={{
+                marginStart:
+                  8,
+
+                ...textDirection,
+              }}
+            >
+              {t(
+                "becomeProvider.personalSaved"
+              )}
             </Text>
           </View>
+
         ) : null}
 
 
@@ -1831,7 +2533,9 @@ const handleSubmitApplication =
             />
           ) : (
             <Text className="font-bold text-white">
-              Save Information
+              {t(
+                "becomeProvider.saveInformation"
+              )}
             </Text>
           )}
         </Pressable>
@@ -1842,25 +2546,55 @@ const handleSubmitApplication =
         ================================== */}
 
         {servicesLoaded ? (
+
           <View className="mt-10">
 
             <View className="h-[1px] bg-[#E2E8F0]" />
 
 
-            <View className="mt-8 flex-row items-center">
+            <View
+              className="mt-8"
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF]">
                 <Text className="font-bold text-[#2563EB]">
                   2
                 </Text>
               </View>
 
-              <View className="ml-3">
-                <Text className="text-lg font-bold text-[#0F172A]">
-                  Services & Prices
+
+              <View
+                className="flex-1"
+                style={{
+                  marginStart:
+                    12,
+                }}
+              >
+                <Text
+                  className="text-lg font-bold text-[#0F172A]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.servicesTitle"
+                  )}
                 </Text>
 
-                <Text className="mt-1 text-xs text-[#64748B]">
-                  Select the services you offer
+
+                <Text
+                  className="mt-1 text-xs text-[#64748B]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.servicesSubtitle"
+                  )}
                 </Text>
               </View>
             </View>
@@ -1868,42 +2602,54 @@ const handleSubmitApplication =
 
             {availableServices.length ===
             0 ? (
+
               <View className="mt-5 items-center rounded-2xl bg-white p-6">
+
                 <Ionicons
                   name="construct-outline"
                   size={32}
                   color="#94A3B8"
                 />
 
+
                 <Text className="mt-3 text-[#64748B]">
-                  No services available.
+                  {t(
+                    "becomeProvider.noServices"
+                  )}
                 </Text>
+
               </View>
+
             ) : null}
 
 
-            {categoryNames.map(
-              (
-                categoryName
-              ) => (
+            {categoryGroups.map(
+              (category) => (
+
                 <View
                   key={
-                    categoryName
+                    category.slug
                   }
                   className="mt-7"
                 >
-                  <Text className="text-base font-bold text-[#0F172A]">
-                    {
-                      categoryName
+                  <Text
+                    className="text-base font-bold text-[#0F172A]"
+                    style={
+                      textDirection
                     }
+                  >
+                    {getCategoryName(
+                      category.slug,
+                      category.name
+                    )}
                   </Text>
 
 
                   {availableServices
                     .filter(
                       (item) =>
-                        item.categoryName ===
-                        categoryName
+                        item.categorySlug ===
+                        category.slug
                     )
                     .map(
                       (item) => {
@@ -1912,11 +2658,13 @@ const handleSubmitApplication =
                             item.serviceId
                           ];
 
+
                         const isSelected =
                           Boolean(
                             serviceState
                               ?.selected
                           );
+
 
                         return (
                           <View
@@ -1936,37 +2684,64 @@ const handleSubmitApplication =
                                   item.serviceId
                                 )
                               }
-                              className="flex-row items-center"
+                              style={{
+                                ...rowDirection,
+                                alignItems:
+                                  "center",
+                              }}
                             >
 
                               <View className="h-11 w-11 items-center justify-center rounded-xl bg-white">
                                 <Ionicons
-                                  name="construct-outline"
+                                  name={
+                                    (item.serviceIcon ||
+                                      "construct-outline") as keyof typeof Ionicons.glyphMap
+                                  }
                                   size={21}
                                   color="#2563EB"
                                 />
                               </View>
 
 
-                              <View className="ml-3 flex-1">
-                                <Text className="font-bold text-[#0F172A]">
-                                  {
-                                    item.serviceName
+                              <View
+                                className="flex-1"
+                                style={{
+                                  marginStart:
+                                    12,
+                                }}
+                              >
+
+                                <Text
+                                  className="font-bold text-[#0F172A]"
+                                  style={
+                                    textDirection
                                   }
+                                >
+                                  {getServiceName(
+                                    item
+                                  )}
                                 </Text>
 
-                                {item.serviceDescription ? (
+
+                                {item
+                                  .serviceDescription ? (
+
                                   <Text
                                     numberOfLines={
                                       2
                                     }
                                     className="mt-1 text-xs leading-5 text-[#64748B]"
-                                  >
-                                    {
-                                      item.serviceDescription
+                                    style={
+                                      textDirection
                                     }
+                                  >
+                                    {getServiceDescription(
+                                      item
+                                    )}
                                   </Text>
+
                                 ) : null}
+
                               </View>
 
 
@@ -1982,20 +2757,41 @@ const handleSubmitApplication =
                                     ? "#2563EB"
                                     : "#94A3B8"
                                 }
+                                style={{
+                                  marginStart:
+                                    8,
+                                }}
                               />
 
                             </Pressable>
 
 
                             {isSelected ? (
+
                               <View className="mt-4">
 
-                                <Text className="mb-2 text-xs font-semibold text-[#64748B]">
-                                  Starting Price
+                                <Text
+                                  className="mb-2 text-xs font-semibold text-[#64748B]"
+                                  style={
+                                    textDirection
+                                  }
+                                >
+                                  {t(
+                                    "becomeProvider.startingPrice"
+                                  )}
                                 </Text>
 
 
-                                <View className="flex-row items-center rounded-xl border border-[#BFDBFE] bg-white px-4">
+                                <View
+                                  className="rounded-xl border border-[#BFDBFE] bg-white px-4"
+                                  style={{
+                                    flexDirection:
+                                      "row",
+
+                                    alignItems:
+                                      "center",
+                                  }}
+                                >
 
                                   <TextInput
                                     value={
@@ -2015,7 +2811,15 @@ const handleSubmitApplication =
                                     placeholder="100"
                                     placeholderTextColor="#94A3B8"
                                     className="flex-1 py-3.5 text-[#0F172A]"
+                                    style={{
+                                      textAlign:
+                                        "left",
+
+                                      writingDirection:
+                                        "ltr",
+                                    }}
                                   />
+
 
                                   <Text className="font-bold text-[#2563EB]">
                                     ₪
@@ -2023,6 +2827,7 @@ const handleSubmitApplication =
 
                                 </View>
                               </View>
+
                             ) : null}
 
                           </View>
@@ -2035,22 +2840,43 @@ const handleSubmitApplication =
 
 
             {servicesSaved ? (
-              <View className="mt-6 flex-row items-center rounded-xl bg-green-50 p-4">
+
+              <View
+                className="mt-6 rounded-xl bg-green-50 p-4"
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
                 <Ionicons
                   name="checkmark-circle"
                   size={20}
                   color="#16A34A"
                 />
 
-                <Text className="ml-2 flex-1 font-semibold text-green-700">
-                  Services and prices saved.
+
+                <Text
+                  className="flex-1 font-semibold text-green-700"
+                  style={{
+                    marginStart:
+                      8,
+
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "becomeProvider.servicesSaved"
+                  )}
                 </Text>
               </View>
+
             ) : null}
 
 
             {availableServices.length >
             0 ? (
+
               <Pressable
                 disabled={
                   servicesSaving
@@ -2070,13 +2896,17 @@ const handleSubmitApplication =
                   />
                 ) : (
                   <Text className="font-bold text-white">
-                    Save Services
+                    {t(
+                      "becomeProvider.saveServices"
+                    )}
                   </Text>
                 )}
               </Pressable>
+
             ) : null}
 
           </View>
+
         ) : null}
 
 
@@ -2086,12 +2916,20 @@ const handleSubmitApplication =
 
         {servicesSaved &&
         availabilityLoaded ? (
+
           <View className="mt-10">
 
             <View className="h-[1px] bg-[#E2E8F0]" />
 
 
-            <View className="mt-8 flex-row items-center">
+            <View
+              className="mt-8"
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
 
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF]">
                 <Text className="font-bold text-[#2563EB]">
@@ -2100,14 +2938,37 @@ const handleSubmitApplication =
               </View>
 
 
-              <View className="ml-3 flex-1">
-                <Text className="text-lg font-bold text-[#0F172A]">
-                  Working Hours
+              <View
+                className="flex-1"
+                style={{
+                  marginStart:
+                    12,
+                }}
+              >
+
+                <Text
+                  className="text-lg font-bold text-[#0F172A]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.workingHoursTitle"
+                  )}
                 </Text>
 
-                <Text className="mt-1 text-xs text-[#64748B]">
-                  Choose the days and hours you're available
+
+                <Text
+                  className="mt-1 text-xs text-[#64748B]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.workingHoursSubtitle"
+                  )}
                 </Text>
+
               </View>
 
             </View>
@@ -2115,15 +2976,32 @@ const handleSubmitApplication =
 
             <View className="mt-5 rounded-2xl bg-[#EFF6FF] p-4">
 
-              <View className="flex-row items-center">
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
                 <Ionicons
                   name="time-outline"
                   size={21}
                   color="#2563EB"
                 />
 
-                <Text className="ml-2 flex-1 text-sm leading-5 text-[#64748B]">
-                  Use 24-hour format, for example 09:00 to 17:00.
+
+                <Text
+                  className="flex-1 text-sm leading-5 text-[#64748B]"
+                  style={{
+                    marginStart:
+                      8,
+
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "becomeProvider.timeHint"
+                  )}
                 </Text>
               </View>
 
@@ -2132,6 +3010,7 @@ const handleSubmitApplication =
 
             {workingHours.map(
               (day) => (
+
                 <View
                   key={
                     day.dayOfWeek
@@ -2151,7 +3030,11 @@ const handleSubmitApplication =
                         day.dayOfWeek
                       )
                     }
-                    className="flex-row items-center"
+                    style={{
+                      ...rowDirection,
+                      alignItems:
+                        "center",
+                    }}
                   >
 
                     <View
@@ -2173,16 +3056,37 @@ const handleSubmitApplication =
                     </View>
 
 
-                    <View className="ml-3 flex-1">
+                    <View
+                      className="flex-1"
+                      style={{
+                        marginStart:
+                          12,
+                      }}
+                    >
 
-                      <Text className="font-bold text-[#0F172A]">
-                        {day.name}
+                      <Text
+                        className="font-bold text-[#0F172A]"
+                        style={
+                          textDirection
+                        }
+                      >
+                        {getDayName(
+                          day.dayOfWeek
+                        )}
                       </Text>
 
-                      <Text className="mt-1 text-xs text-[#64748B]">
+
+                      <Text
+                        className="mt-1 text-xs text-[#64748B]"
+                        style={
+                          textDirection
+                        }
+                      >
                         {day.isAvailable
                           ? `${day.startTime} - ${day.endTime}`
-                          : "Not available"}
+                          : t(
+                              "becomeProvider.notAvailable"
+                            )}
                       </Text>
 
                     </View>
@@ -2200,6 +3104,10 @@ const handleSubmitApplication =
                           ? "#2563EB"
                           : "#94A3B8"
                       }
+                      style={{
+                        marginStart:
+                          8,
+                      }}
                     />
 
                   </Pressable>
@@ -2208,23 +3116,52 @@ const handleSubmitApplication =
                   {/* TIMES */}
 
                   {day.isAvailable ? (
-                    <View className="mt-4 flex-row">
+
+                    <View
+                      className="mt-4"
+                      style={{
+                        ...rowDirection,
+                      }}
+                    >
 
                       {/* START */}
 
-                      <View className="mr-2 flex-1">
+                      <View
+                        className="flex-1"
+                        style={{
+                          marginEnd:
+                            8,
+                        }}
+                      >
 
-                        <Text className="mb-2 text-xs font-semibold text-[#64748B]">
-                          Start Time
+                        <Text
+                          className="mb-2 text-xs font-semibold text-[#64748B]"
+                          style={
+                            textDirection
+                          }
+                        >
+                          {t(
+                            "becomeProvider.startTime"
+                          )}
                         </Text>
 
-                        <View className="flex-row items-center rounded-xl border border-[#BFDBFE] bg-white px-3">
 
+                        <View
+                          className="rounded-xl border border-[#BFDBFE] bg-white px-3"
+                          style={{
+                            flexDirection:
+                              "row",
+
+                            alignItems:
+                              "center",
+                          }}
+                        >
                           <Ionicons
                             name="time-outline"
                             size={17}
                             color="#64748B"
                           />
+
 
                           <TextInput
                             value={
@@ -2242,28 +3179,55 @@ const handleSubmitApplication =
                             placeholder="09:00"
                             placeholderTextColor="#94A3B8"
                             maxLength={5}
-                            className="ml-2 flex-1 py-3.5 text-center font-semibold text-[#0F172A]"
+                            className="flex-1 py-3.5 text-center font-semibold text-[#0F172A]"
+                            style={{
+                              writingDirection:
+                                "ltr",
+                            }}
                           />
-
                         </View>
+
                       </View>
 
 
                       {/* END */}
 
-                      <View className="ml-2 flex-1">
+                      <View
+                        className="flex-1"
+                        style={{
+                          marginStart:
+                            8,
+                        }}
+                      >
 
-                        <Text className="mb-2 text-xs font-semibold text-[#64748B]">
-                          End Time
+                        <Text
+                          className="mb-2 text-xs font-semibold text-[#64748B]"
+                          style={
+                            textDirection
+                          }
+                        >
+                          {t(
+                            "becomeProvider.endTime"
+                          )}
                         </Text>
 
-                        <View className="flex-row items-center rounded-xl border border-[#BFDBFE] bg-white px-3">
 
+                        <View
+                          className="rounded-xl border border-[#BFDBFE] bg-white px-3"
+                          style={{
+                            flexDirection:
+                              "row",
+
+                            alignItems:
+                              "center",
+                          }}
+                        >
                           <Ionicons
                             name="time-outline"
                             size={17}
                             color="#64748B"
                           />
+
 
                           <TextInput
                             value={
@@ -2281,13 +3245,18 @@ const handleSubmitApplication =
                             placeholder="17:00"
                             placeholderTextColor="#94A3B8"
                             maxLength={5}
-                            className="ml-2 flex-1 py-3.5 text-center font-semibold text-[#0F172A]"
+                            className="flex-1 py-3.5 text-center font-semibold text-[#0F172A]"
+                            style={{
+                              writingDirection:
+                                "ltr",
+                            }}
                           />
-
                         </View>
+
                       </View>
 
                     </View>
+
                   ) : null}
 
                 </View>
@@ -2296,7 +3265,15 @@ const handleSubmitApplication =
 
 
             {availabilitySaved ? (
-              <View className="mt-6 flex-row items-center rounded-xl bg-green-50 p-4">
+
+              <View
+                className="mt-6 rounded-xl bg-green-50 p-4"
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
 
                 <Ionicons
                   name="checkmark-circle"
@@ -2304,11 +3281,23 @@ const handleSubmitApplication =
                   color="#16A34A"
                 />
 
-                <Text className="ml-2 flex-1 font-semibold text-green-700">
-                  Working hours saved successfully.
+
+                <Text
+                  className="flex-1 font-semibold text-green-700"
+                  style={{
+                    marginStart:
+                      8,
+
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "becomeProvider.hoursSaved"
+                  )}
                 </Text>
 
               </View>
+
             ) : null}
 
 
@@ -2325,20 +3314,21 @@ const handleSubmitApplication =
                   : "bg-[#2563EB]"
               }`}
             >
-
               {availabilitySaving ? (
                 <ActivityIndicator
                   color="white"
                 />
               ) : (
                 <Text className="font-bold text-white">
-                  Save Working Hours
+                  {t(
+                    "becomeProvider.saveWorkingHours"
+                  )}
                 </Text>
               )}
-
             </Pressable>
 
           </View>
+
         ) : null}
 
 
@@ -2347,232 +3337,379 @@ const handleSubmitApplication =
         ================================== */}
 
         {error ? (
+
           <View className="mt-6 rounded-xl bg-red-50 p-4">
 
-            <View className="flex-row items-center">
-
+            <View
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
               <Ionicons
                 name="alert-circle-outline"
                 size={20}
                 color="#DC2626"
               />
 
-              <Text className="ml-2 flex-1 font-semibold text-red-600">
+
+              <Text
+                className="flex-1 font-semibold text-red-600"
+                style={{
+                  marginStart:
+                    8,
+
+                  ...textDirection,
+                }}
+              >
                 {error}
               </Text>
 
             </View>
 
           </View>
+
         ) : null}
 
 
         {/* ==================================
-            STEP 4 PREVIEW
+            STEP 4 REVIEW
         ================================== */}
 
-         {availabilitySaved ? (
-  <View className="mt-9">
+        {availabilitySaved ? (
 
-    <View className="h-[1px] bg-[#E2E8F0]" />
+          <View className="mt-9">
 
-
-    {/* STEP 4 HEADER */}
-
-    <View className="mt-8 flex-row items-center">
-
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF]">
-        <Text className="font-bold text-[#2563EB]">
-          4
-        </Text>
-      </View>
+            <View className="h-[1px] bg-[#E2E8F0]" />
 
 
-      <View className="ml-3 flex-1">
+            <View
+              className="mt-8"
+              style={{
+                ...rowDirection,
+                alignItems:
+                  "center",
+              }}
+            >
 
-        <Text className="text-lg font-bold text-[#0F172A]">
-          Review & Submit
-        </Text>
-
-        <Text className="mt-1 text-xs text-[#64748B]">
-          Review your application before sending it
-        </Text>
-
-      </View>
-
-    </View>
-
-
-    {/* SUMMARY */}
-
-    <View className="mt-5 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-
-      {/* Personal */}
-
-      <View className="flex-row items-center">
-
-        <Ionicons
-          name="person-outline"
-          size={21}
-          color="#2563EB"
-        />
-
-        <Text className="ml-3 flex-1 font-semibold text-[#0F172A]">
-          Personal Information
-        </Text>
-
-        <Ionicons
-          name="checkmark-circle"
-          size={22}
-          color="#16A34A"
-        />
-
-      </View>
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF]">
+                <Text className="font-bold text-[#2563EB]">
+                  4
+                </Text>
+              </View>
 
 
-      <View className="my-4 h-[1px] bg-[#F1F5F9]" />
+              <View
+                className="flex-1"
+                style={{
+                  marginStart:
+                    12,
+                }}
+              >
+                <Text
+                  className="text-lg font-bold text-[#0F172A]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.reviewTitle"
+                  )}
+                </Text>
 
 
-      {/* Services */}
+                <Text
+                  className="mt-1 text-xs text-[#64748B]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {t(
+                    "becomeProvider.reviewSubtitle"
+                  )}
+                </Text>
+              </View>
 
-      <View className="flex-row items-center">
-
-        <Ionicons
-          name="construct-outline"
-          size={21}
-          color="#2563EB"
-        />
-
-        <View className="ml-3 flex-1">
-
-          <Text className="font-semibold text-[#0F172A]">
-            Services & Prices
-          </Text>
-
-          <Text className="mt-1 text-xs text-[#64748B]">
-            {
-              Object.values(
-                selectedServices
-              ).filter(
-                (item) =>
-                  item.selected
-              ).length
-            } selected
-          </Text>
-
-        </View>
-
-        <Ionicons
-          name="checkmark-circle"
-          size={22}
-          color="#16A34A"
-        />
-
-      </View>
+            </View>
 
 
-      <View className="my-4 h-[1px] bg-[#F1F5F9]" />
+            {/* SUMMARY */}
+
+            <View className="mt-5 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+
+              {/* PERSONAL */}
+
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
+                <Ionicons
+                  name="person-outline"
+                  size={21}
+                  color="#2563EB"
+                />
 
 
-      {/* Working Hours */}
+                <Text
+                  className="flex-1 font-semibold text-[#0F172A]"
+                  style={{
+                    marginStart:
+                      12,
 
-      <View className="flex-row items-center">
-
-        <Ionicons
-          name="time-outline"
-          size={21}
-          color="#2563EB"
-        />
-
-        <View className="ml-3 flex-1">
-
-          <Text className="font-semibold text-[#0F172A]">
-            Working Hours
-          </Text>
-
-          <Text className="mt-1 text-xs text-[#64748B]">
-            {
-              workingHours.filter(
-                (day) =>
-                  day.isAvailable
-              ).length
-            } working days
-          </Text>
-
-        </View>
-
-        <Ionicons
-          name="checkmark-circle"
-          size={22}
-          color="#16A34A"
-        />
-
-      </View>
-
-    </View>
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "becomeProvider.personalTitle"
+                  )}
+                </Text>
 
 
-    {/* WARNING */}
-
-    <View className="mt-5 rounded-2xl bg-amber-50 p-4">
-
-      <View className="flex-row">
-
-        <Ionicons
-          name="information-circle-outline"
-          size={22}
-          color="#D97706"
-        />
-
-        <Text className="ml-2 flex-1 text-sm leading-5 text-amber-700">
-          After submitting, your application will be sent for review and you won't be able to edit it while it is pending.
-        </Text>
-
-      </View>
-
-    </View>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color="#16A34A"
+                />
+              </View>
 
 
-    {/* SUBMIT BUTTON */}
+              <View className="my-4 h-[1px] bg-[#F1F5F9]" />
 
-    <Pressable
-      disabled={
-        isSubmitting
-      }
-      onPress={
-        handleSubmitApplication
-      }
-      className={`mt-6 flex-row items-center justify-center rounded-2xl py-4 ${
-        isSubmitting
-          ? "bg-[#94A3B8]"
-          : "bg-[#16A34A]"
-      }`}
-    >
 
-      {isSubmitting ? (
-        <ActivityIndicator
-          color="white"
-        />
-      ) : (
-        <>
-          <Ionicons
-            name="send-outline"
-            size={20}
-            color="white"
-          />
+              {/* SERVICES */}
 
-          <Text className="ml-2 font-bold text-white">
-            Submit Application
-          </Text>
-        </>
-      )}
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
+                <Ionicons
+                  name="construct-outline"
+                  size={21}
+                  color="#2563EB"
+                />
 
-    </Pressable>
 
-  </View>
-) : null}
+                <View
+                  className="flex-1"
+                  style={{
+                    marginStart:
+                      12,
+                  }}
+                >
+                  <Text
+                    className="font-semibold text-[#0F172A]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "becomeProvider.servicesTitle"
+                    )}
+                  </Text>
+
+
+                  <Text
+                    className="mt-1 text-xs text-[#64748B]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "becomeProvider.selectedServicesCount",
+                      {
+                        count:
+                          Object.values(
+                            selectedServices
+                          ).filter(
+                            (item) =>
+                              item.selected
+                          ).length,
+                      }
+                    )}
+                  </Text>
+                </View>
+
+
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color="#16A34A"
+                />
+              </View>
+
+
+              <View className="my-4 h-[1px] bg-[#F1F5F9]" />
+
+
+              {/* WORKING HOURS */}
+
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "center",
+                }}
+              >
+                <Ionicons
+                  name="time-outline"
+                  size={21}
+                  color="#2563EB"
+                />
+
+
+                <View
+                  className="flex-1"
+                  style={{
+                    marginStart:
+                      12,
+                  }}
+                >
+                  <Text
+                    className="font-semibold text-[#0F172A]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "becomeProvider.workingHoursTitle"
+                    )}
+                  </Text>
+
+
+                  <Text
+                    className="mt-1 text-xs text-[#64748B]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {t(
+                      "becomeProvider.workingDaysCount",
+                      {
+                        count:
+                          workingHours.filter(
+                            (day) =>
+                              day.isAvailable
+                          ).length,
+                      }
+                    )}
+                  </Text>
+                </View>
+
+
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color="#16A34A"
+                />
+              </View>
+
+            </View>
+
+
+            {/* WARNING */}
+
+            <View className="mt-5 rounded-2xl bg-amber-50 p-4">
+
+              <View
+                style={{
+                  ...rowDirection,
+                  alignItems:
+                    "flex-start",
+                }}
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={22}
+                  color="#D97706"
+                />
+
+
+                <Text
+                  className="flex-1 text-sm leading-5 text-amber-700"
+                  style={{
+                    marginStart:
+                      8,
+
+                    ...textDirection,
+                  }}
+                >
+                  {t(
+                    "becomeProvider.submitWarning"
+                  )}
+                </Text>
+              </View>
+
+            </View>
+
+
+            {/* SUBMIT */}
+
+            <Pressable
+              disabled={
+                isSubmitting
+              }
+              onPress={
+                handleSubmitApplication
+              }
+              className={`mt-6 items-center justify-center rounded-2xl py-4 ${
+                isSubmitting
+                  ? "bg-[#94A3B8]"
+                  : "bg-[#16A34A]"
+              }`}
+            >
+
+              {isSubmitting ? (
+
+                <ActivityIndicator
+                  color="white"
+                />
+
+              ) : (
+
+                <View
+                  style={{
+                    ...rowDirection,
+                    alignItems:
+                      "center",
+                  }}
+                >
+                  <Ionicons
+                    name="send-outline"
+                    size={20}
+                    color="white"
+                  />
+
+
+                  <Text
+                    className="font-bold text-white"
+                    style={{
+                      marginStart:
+                        8,
+                    }}
+                  >
+                    {t(
+                      "becomeProvider.submitApplication"
+                    )}
+                  </Text>
+                </View>
+
+              )}
+
+            </Pressable>
+
+          </View>
+
+        ) : null}
 
       </ScrollView>
+
     </SafeAreaView>
   );
 }

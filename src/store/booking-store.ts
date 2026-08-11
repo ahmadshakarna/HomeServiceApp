@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+
 export type CustomerBooking = {
   booking: {
     id: string;
@@ -24,12 +25,14 @@ export type CustomerBooking = {
   service: {
     id: string;
     name: string;
+    slug: string;
     icon: string | null;
   };
 
   category: {
     id: string;
     name: string;
+    slug: string;
   };
 
   provider: {
@@ -39,6 +42,7 @@ export type CustomerBooking = {
     isVerified: boolean;
   };
 };
+
 
 type BookingStore = {
   bookings: CustomerBooking[];
@@ -53,68 +57,80 @@ type BookingStore = {
   clearBookings: () => void;
 };
 
+
 export const useBookingStore =
-  create<BookingStore>((set) => ({
-    bookings: [],
+  create<BookingStore>(
+    (set) => ({
+      bookings: [],
 
-    isLoading: false,
-    error: null,
+      isLoading: false,
+      error: null,
 
-    loadBookings: async (
-      customerId
-    ) => {
-      set({
-        isLoading: true,
-        error: null,
-      });
 
-      try {
-        const response =
-          await fetch(
-            `/api/bookings?customerId=${encodeURIComponent(
-              customerId
-            )}`
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ||
-              "Failed to load bookings"
-          );
-        }
-
+      loadBookings: async (
+        customerId
+      ) => {
         set({
-          bookings:
-            data.bookings,
+          isLoading: true,
+          error: null,
         });
-      } catch (error) {
-        console.error(
-          "LOAD BOOKINGS ERROR:",
-          error
-        );
 
+
+        try {
+          const response =
+            await fetch(
+              `/api/bookings?customerId=${encodeURIComponent(
+                customerId
+              )}`
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (!response.ok) {
+            throw new Error(
+              data.error ||
+                "Failed to load bookings"
+            );
+          }
+
+
+          set({
+            bookings:
+              data.bookings,
+          });
+
+        } catch (error) {
+          console.error(
+            "LOAD BOOKINGS ERROR:",
+            error
+          );
+
+
+          set({
+            bookings: [],
+
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to load bookings",
+          });
+
+        } finally {
+          set({
+            isLoading: false,
+          });
+        }
+      },
+
+
+      clearBookings: () => {
         set({
           bookings: [],
-
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to load bookings",
+          error: null,
         });
-      } finally {
-        set({
-          isLoading: false,
-        });
-      }
-    },
-
-    clearBookings: () => {
-      set({
-        bookings: [],
-        error: null,
-      });
-    },
-  }));
+      },
+    })
+  );

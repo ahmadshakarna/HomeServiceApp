@@ -131,11 +131,17 @@ export const getProviderApplicationDetails =
           serviceName:
             services.name,
 
+          serviceSlug:
+            services.slug,
+
           categoryId:
             categories.id,
 
           categoryName:
             categories.name,
+
+          categorySlug:
+            categories.slug,
 
           priceAgorot:
             providerServices.priceAgorot,
