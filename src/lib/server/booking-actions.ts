@@ -12,6 +12,7 @@ import {
   categories,
   providerAvailability,
   providerServices,
+  reviews,
   serviceProviders,
   services,
 } from "./db/schema";
@@ -30,6 +31,70 @@ type CreateBookingInput = {
 
   address: string;
   notes?: string | null;
+};
+
+
+// ========================================
+// POSTGRES ERROR HELPERS
+// ========================================
+
+const getPostgresErrorCode = (
+  error: unknown
+) => {
+  if (
+    typeof error !== "object" ||
+    error === null
+  ) {
+    return null;
+  }
+
+
+  const directCode =
+    (
+      error as {
+        code?: unknown;
+      }
+    ).code;
+
+
+  if (
+    typeof directCode ===
+    "string"
+  ) {
+    return directCode;
+  }
+
+
+  const cause =
+    (
+      error as {
+        cause?: unknown;
+      }
+    ).cause;
+
+
+  if (
+    typeof cause === "object" &&
+    cause !== null
+  ) {
+    const causeCode =
+      (
+        cause as {
+          code?: unknown;
+        }
+      ).code;
+
+
+    if (
+      typeof causeCode ===
+      "string"
+    ) {
+      return causeCode;
+    }
+  }
+
+
+  return null;
 };
 
 
@@ -363,45 +428,140 @@ export const createBooking =
     // CREATE
     // =====================================
 
-    const result =
+    try {
+      const result =
+        await db
+          .insert(
+            bookings
+          )
+
+          .values({
+            // مصدره Clerk server-side
+            customerId,
+
+            providerId,
+            serviceId,
+
+            // السعر دائمًا من DB
+            priceAgorot:
+              providerService.priceAgorot,
+
+            bookingDate,
+
+            startTime:
+              requestedTime,
+
+            address:
+              address.trim(),
+
+            notes:
+              notes?.trim() ||
+              null,
+
+            status:
+              "pending",
+          })
+
+          .returning();
+
+
+      return result[
+        0
+      ];
+
+    } catch (error) {
+      // PostgreSQL:
+      // 23505 = unique_violation
+      //
+      // هذا هو خط الدفاع النهائي
+      // إذا وصل طلبان لنفس الموعد
+      // بنفس اللحظة وتجاوزا فحص SELECT.
+      if (
+        getPostgresErrorCode(
+          error
+        ) === "23505"
+      ) {
+        throw new Error(
+          "This time slot is already booked"
+        );
+      }
+
+
+      throw error;
+    }
+  };
+
+
+// ========================================
+// LIST PROVIDER BOOKED TIME SLOTS
+// ========================================
+
+export const listProviderBookedTimeSlots =
+  async (
+    providerId: string,
+    bookingDate: string
+  ) => {
+    if (
+      !providerId ||
+      !bookingDate
+    ) {
+      throw new Error(
+        "Provider id and booking date are required"
+      );
+    }
+
+
+    const dateRegex =
+      /^\d{4}-\d{2}-\d{2}$/;
+
+
+    if (
+      !dateRegex.test(
+        bookingDate
+      )
+    ) {
+      throw new Error(
+        "Invalid booking date"
+      );
+    }
+
+
+    const rows =
       await db
-        .insert(
+        .select({
+          startTime:
+            bookings.startTime,
+        })
+        .from(
           bookings
         )
+        .where(
+          and(
+            eq(
+              bookings.providerId,
+              providerId
+            ),
 
-        .values({
-          // مصدره Clerk server-side
-          customerId,
+            eq(
+              bookings.bookingDate,
+              bookingDate
+            ),
 
-          providerId,
-          serviceId,
-
-          // السعر دائمًا من DB
-          priceAgorot:
-            providerService.priceAgorot,
-
-          bookingDate,
-
-          startTime:
-            requestedTime,
-
-          address:
-            address.trim(),
-
-          notes:
-            notes?.trim() ||
-            null,
-
-          status:
-            "pending",
-        })
-
-        .returning();
+            ne(
+              bookings.status,
+              "cancelled"
+            )
+          )
+        );
 
 
-    return result[
-      0
-    ];
+    return rows.map(
+      (row) =>
+        row.startTime.slice(
+          0,
+          5
+        )
+    );
   };
 
 
@@ -822,4 +982,356 @@ export const cancelCustomerBooking =
     return rows[
       0
     ];
+  };
+// ========================================
+// GET CUSTOMER BOOKING REVIEW
+// ========================================
+
+export const getCustomerBookingReview =
+  async (
+    bookingId: string,
+    customerId: string
+  ) => {
+    if (
+      !bookingId ||
+      !customerId
+    ) {
+      return null;
+    }
+
+
+    const rows =
+      await db
+        .select({
+          id:
+            reviews.id,
+
+          bookingId:
+            reviews.bookingId,
+
+          providerId:
+            reviews.providerId,
+
+          rating:
+            reviews.rating,
+
+          comment:
+            reviews.comment,
+
+          createdAt:
+            reviews.createdAt,
+        })
+        .from(
+          reviews
+        )
+        .where(
+          and(
+            eq(
+              reviews.bookingId,
+              bookingId
+            ),
+
+            eq(
+              reviews.customerId,
+              customerId
+            )
+          )
+        )
+        .limit(
+          1
+        );
+
+
+    return rows[
+      0
+    ] ?? null;
+  };
+
+
+// ========================================
+// CREATE CUSTOMER BOOKING REVIEW
+// ========================================
+
+type CreateBookingReviewInput = {
+  bookingId: string;
+  customerId: string;
+  rating: number;
+  comment?: string | null;
+};
+
+
+export const createCustomerBookingReview =
+  async (
+    input: CreateBookingReviewInput
+  ) => {
+    const {
+      bookingId,
+      customerId,
+      rating,
+      comment,
+    } = input;
+
+
+    if (
+      !bookingId ||
+      !customerId
+    ) {
+      throw new Error(
+        "Booking not found"
+      );
+    }
+
+
+    if (
+      !Number.isInteger(
+        rating
+      ) ||
+      rating < 1 ||
+      rating > 5
+    ) {
+      throw new Error(
+        "Rating must be between 1 and 5"
+      );
+    }
+
+
+    const cleanComment =
+      comment?.trim() ||
+      null;
+
+
+    if (
+      cleanComment &&
+      cleanComment.length >
+        1000
+    ) {
+      throw new Error(
+        "Review comment is too long"
+      );
+    }
+
+
+    // =====================================
+    // VERIFY BOOKING OWNERSHIP + STATUS
+    // =====================================
+
+    const bookingRows =
+      await db
+        .select({
+          id:
+            bookings.id,
+
+          providerId:
+            bookings.providerId,
+
+          status:
+            bookings.status,
+        })
+        .from(
+          bookings
+        )
+        .where(
+          and(
+            eq(
+              bookings.id,
+              bookingId
+            ),
+
+            eq(
+              bookings.customerId,
+              customerId
+            )
+          )
+        )
+        .limit(
+          1
+        );
+
+
+    const booking =
+      bookingRows[
+        0
+      ];
+
+
+    if (!booking) {
+      throw new Error(
+        "Booking not found"
+      );
+    }
+
+
+    if (
+      booking.status !==
+      "completed"
+    ) {
+      throw new Error(
+        "Only completed bookings can be reviewed"
+      );
+    }
+
+
+    // =====================================
+    // PREVENT DUPLICATE REVIEW
+    // =====================================
+
+    const existing =
+      await db
+        .select({
+          id:
+            reviews.id,
+        })
+        .from(
+          reviews
+        )
+        .where(
+          eq(
+            reviews.bookingId,
+            bookingId
+          )
+        )
+        .limit(
+          1
+        );
+
+
+    if (
+      existing.length >
+      0
+    ) {
+      throw new Error(
+        "This booking has already been reviewed"
+      );
+    }
+
+
+    // =====================================
+    // CREATE REVIEW
+    // =====================================
+
+    try {
+      const rows =
+        await db
+          .insert(
+            reviews
+          )
+          .values({
+            bookingId,
+
+            // مصدره Clerk server-side
+            customerId,
+
+            // لا نأخذه من العميل
+            providerId:
+              booking.providerId,
+
+            rating,
+
+            comment:
+              cleanComment,
+          })
+          .returning();
+
+
+      return rows[
+        0
+      ];
+
+    } catch (error) {
+      // reviews_booking_unique
+      if (
+        getPostgresErrorCode(
+          error
+        ) === "23505"
+      ) {
+        throw new Error(
+          "This booking has already been reviewed"
+        );
+      }
+
+
+      throw error;
+    }
+  };
+// ========================================
+// GET PROVIDER REVIEW SUMMARY
+// ========================================
+
+export const getProviderReviewSummary =
+  async (
+    providerId: string
+  ) => {
+    if (!providerId) {
+      return {
+        averageRating:
+          0,
+
+        reviewCount:
+          0,
+      };
+    }
+
+
+    const rows =
+      await db
+        .select({
+          rating:
+            reviews.rating,
+        })
+        .from(
+          reviews
+        )
+        .where(
+          eq(
+            reviews.providerId,
+            providerId
+          )
+        );
+
+
+    const reviewCount =
+      rows.length;
+
+
+    if (
+      reviewCount ===
+      0
+    ) {
+      return {
+        averageRating:
+          0,
+
+        reviewCount:
+          0,
+      };
+    }
+
+
+    const total =
+      rows.reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          item.rating,
+        0
+      );
+
+
+    const averageRating =
+      Math.round(
+        (
+          total /
+          reviewCount
+        ) *
+          10
+      ) /
+      10;
+
+
+    return {
+      averageRating,
+      reviewCount,
+    };
   };

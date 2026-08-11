@@ -1,34 +1,213 @@
-import { useSSO } from "@clerk/expo";
-import { useState } from "react";
-import { Alert } from "react-native";
+import {
+  useSSO,
+} from "@clerk/expo";
+
+import * as AuthSession
+  from "expo-auth-session";
+
+import * as WebBrowser
+  from "expo-web-browser";
+
+import {
+  router,
+} from "expo-router";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Alert,
+  Platform,
+} from "react-native";
+
+
+
+type SocialStrategy =
+  | "oauth_google"
+  | "oauth_github"
+  | "oauth_apple";
+
+
+WebBrowser.maybeCompleteAuthSession();
+
 
 const useSocialAuth = () => {
-  const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
-  const { startSSOFlow } = useSSO();
+  const [
+    loadingStrategy,
+    setLoadingStrategy,
+  ] =
+    useState<
+      SocialStrategy | null
+    >(null);
 
-  const handleSocialAuth = async (strategy: "oauth_google" | "oauth_github" | "oauth_apple") => {
-    if (loadingStrategy) return; // guard againts concurrent flows
 
-    setLoadingStrategy(strategy);
+  const {
+    startSSOFlow,
+  } = useSSO();
 
-    try {
-      const { createdSessionId, setActive } = await startSSOFlow({ strategy });
 
-      if (!createdSessionId || !setActive) {
-        Alert.alert("Sign-in incomplete", "Sign-in did not complete. Please try again.");
+  // ========================================
+  // WARM UP BROWSER - ANDROID
+  // ========================================
+
+    useEffect(() => {
+    if (
+      Platform.OS !==
+      "android"
+    ) {
+      return;
+    }
+
+
+    void WebBrowser.warmUpAsync();
+
+
+    return () => {
+      void WebBrowser.coolDownAsync();
+    };
+
+  }, []);
+
+
+  // ========================================
+  // SOCIAL AUTH
+  // ========================================
+
+  const handleSocialAuth =
+    async (
+      strategy:
+        SocialStrategy
+    ) => {
+      if (
+        loadingStrategy
+      ) {
         return;
       }
 
-      await setActive({ session: createdSessionId });
-    } catch (error) {
-      console.log("💥 Error in social auth:", error);
-      Alert.alert("Error", "Failed to sign in. Please try again.");
-    } finally {
-      setLoadingStrategy(null);
-    }
-  };
 
-  return { handleSocialAuth, loadingStrategy };
+      setLoadingStrategy(
+        strategy
+      );
+
+
+      try {
+        const redirectUrl =
+          AuthSession.makeRedirectUri({
+            scheme:
+              "homeservice",
+
+            path:
+              "/continue",
+          });
+
+
+        console.log(
+          "SSO REDIRECT URL:",
+          redirectUrl
+        );
+
+
+        const {
+          createdSessionId,
+          setActive,
+          signIn,
+          signUp,
+        } =
+          await startSSOFlow({
+            strategy,
+            redirectUrl,
+          });
+
+
+        console.log(
+          "SSO RESULT:",
+          {
+            createdSessionId,
+
+            signInStatus:
+              signIn?.status,
+
+            signUpStatus:
+              signUp?.status,
+          }
+        );
+
+
+        // =====================================
+        // SUCCESS
+        // =====================================
+
+        if (
+          createdSessionId &&
+          setActive
+        ) {
+          await setActive({
+            session:
+              createdSessionId,
+          });
+
+
+          router.replace(
+            "/"
+          );
+
+
+          return;
+        }
+
+
+        // =====================================
+        // NOT COMPLETE
+        // =====================================
+
+        console.log(
+          "SSO NOT COMPLETE:",
+          {
+            signIn:
+              signIn?.status,
+
+            signUp:
+              signUp?.status,
+          }
+        );
+
+
+        Alert.alert(
+          "Sign-in incomplete",
+          "Sign-in needs another step or the redirect URL is not configured correctly."
+        );
+
+      } catch (error) {
+        console.error(
+          "SOCIAL AUTH ERROR:",
+          JSON.stringify(
+            error,
+            null,
+            2
+          )
+        );
+
+
+        Alert.alert(
+          "Error",
+          "Failed to sign in. Please try again."
+        );
+
+      } finally {
+        setLoadingStrategy(
+          null
+        );
+      }
+    };
+
+
+  return {
+    handleSocialAuth,
+    loadingStrategy,
+  };
 };
+
 
 export default useSocialAuth;

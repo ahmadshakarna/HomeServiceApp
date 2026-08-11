@@ -1,4 +1,4 @@
-import "@/lib/i18n";
+
 
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';

@@ -1,6 +1,8 @@
 // This file defines the schema for the "grocery_items" table in the database using Drizzle ORM. It specifies the structure of the table, including column names, data types, and constraints.
-import {  pgTable,uuid,varchar,text,boolean,integer,timestamp,bigint, uniqueIndex,time} from "drizzle-orm/pg-core";
-
+import {  pgTable,uuid,text,boolean,integer,timestamp,bigint, uniqueIndex,time} from "drizzle-orm/pg-core";
+import {
+  sql,
+} from "drizzle-orm";
 export const groceryItems = pgTable("grocery_items", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -252,58 +254,214 @@ export const providerAvailability = pgTable(
 );
 
 // Bookings table
-export const bookings = pgTable("bookings", {
-  id: uuid("id")
-    .defaultRandom()
-    .primaryKey(),
+// ===============================
+// BOOKINGS
+// ===============================
 
-  // Clerk user id للعميل
-  customerId: text("customer_id")
-    .notNull(),
+export const bookings = pgTable(
+  "bookings",
 
-  providerId: uuid("provider_id")
-    .notNull()
-    .references(() => serviceProviders.id, {
-      onDelete: "cascade",
-    }),
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
 
-  serviceId: uuid("service_id")
-    .notNull()
-    .references(() => services.id, {
-      onDelete: "cascade",
-    }),
 
-  // السعر وقت الحجز
-  // نخزنه حتى لو مقدم الخدمة غيّر السعر لاحقًا
-  priceAgorot: integer("price_agorot")
-    .notNull(),
+    // Clerk user id للعميل
+    customerId: text(
+      "customer_id"
+    )
+      .notNull(),
 
-  bookingDate: text("booking_date")
-    .notNull(),
 
-  startTime: time("start_time")
-    .notNull(),
+    providerId: uuid(
+      "provider_id"
+    )
+      .notNull()
+      .references(
+        () =>
+          serviceProviders.id,
+        {
+          onDelete:
+            "cascade",
+        }
+      ),
 
-  // العنوان حاليًا كنص
-  // لاحقًا سنعمل addresses table
-  address: text("address")
-    .notNull(),
 
-  notes: text("notes"),
+    serviceId: uuid(
+      "service_id"
+    )
+      .notNull()
+      .references(
+        () =>
+          services.id,
+        {
+          onDelete:
+            "cascade",
+        }
+      ),
 
-  status: text("status")
-    .notNull()
-    .default("pending"),
 
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
+    // السعر وقت الحجز
+    // يبقى محفوظ حتى لو تغير سعر الخدمة لاحقًا
+    priceAgorot: integer(
+      "price_agorot"
+    )
+      .notNull(),
+
+
+    bookingDate: text(
+      "booking_date"
+    )
+      .notNull(),
+
+
+    startTime: time(
+      "start_time"
+    )
+      .notNull(),
+
+
+    address: text(
+      "address"
+    )
+      .notNull(),
+
+
+    notes: text(
+      "notes"
+    ),
+
+
+    status: text(
+      "status"
+    )
+      .notNull()
+      .default(
+        "pending"
+      ),
+
+
+    createdAt: timestamp(
+      "created_at",
+      {
+        withTimezone:
+          true,
+      }
+    )
+      .defaultNow()
+      .notNull(),
+
+
+    updatedAt: timestamp(
+      "updated_at",
+      {
+        withTimezone:
+          true,
+      }
+    )
+      .defaultNow()
+      .notNull(),
+  },
+
+
+  // ========================================
+  // INDEXES
+  // ========================================
+
+  (table) => ({
+    providerTimeUnique:
+      uniqueIndex(
+        "bookings_provider_date_time_active_unique"
+      )
+        .on(
+          table.providerId,
+          table.bookingDate,
+          table.startTime
+        )
+        .where(
+          sql`${table.status} <> 'cancelled'`
+        ),
   })
-    .defaultNow()
-    .notNull(),
+);
 
-  updatedAt: timestamp("updated_at", {
-    withTimezone: true,
+// =====================================
+// reviews
+// =====================================
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
+
+    bookingId: uuid(
+      "booking_id"
+    )
+      .notNull()
+      .references(
+        () => bookings.id,
+        {
+          onDelete:
+            "cascade",
+        }
+      ),
+
+    // Clerk customer id
+    customerId: text(
+      "customer_id"
+    )
+      .notNull(),
+
+    providerId: uuid(
+      "provider_id"
+    )
+      .notNull()
+      .references(
+        () =>
+          serviceProviders.id,
+        {
+          onDelete:
+            "cascade",
+        }
+      ),
+
+    rating: integer(
+      "rating"
+    )
+      .notNull(),
+
+    comment: text(
+      "comment"
+    ),
+
+    createdAt: timestamp(
+      "created_at",
+      {
+        withTimezone:
+          true,
+      }
+    )
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp(
+      "updated_at",
+      {
+        withTimezone:
+          true,
+      }
+    )
+      .defaultNow()
+      .notNull(),
+  },
+
+  (table) => ({
+    bookingReviewUnique:
+      uniqueIndex(
+        "reviews_booking_unique"
+      ).on(
+        table.bookingId
+      ),
   })
-    .defaultNow()
-    .notNull(),
-});
+);

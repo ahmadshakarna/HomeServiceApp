@@ -20,12 +20,14 @@ export type CustomerBooking = {
     status: string;
 
     createdAt: string;
+    updatedAt?: string;
   };
 
   service: {
     id: string;
     name: string;
     slug: string;
+    description?: string | null;
     icon: string | null;
   };
 
@@ -38,6 +40,7 @@ export type CustomerBooking = {
   provider: {
     id: string;
     fullName: string;
+    phone?: string | null;
     city: string | null;
     isVerified: boolean;
   };
@@ -51,7 +54,7 @@ type BookingStore = {
   error: string | null;
 
   loadBookings: (
-    customerId: string
+    token: string
   ) => Promise<void>;
 
   clearBookings: () => void;
@@ -67,8 +70,12 @@ export const useBookingStore =
       error: null,
 
 
+      // ========================================
+      // LOAD MY BOOKINGS
+      // ========================================
+
       loadBookings: async (
-        customerId
+        token
       ) => {
         set({
           isLoading: true,
@@ -77,11 +84,22 @@ export const useBookingStore =
 
 
         try {
+          if (!token) {
+            throw new Error(
+              "Authentication required"
+            );
+          }
+
+
           const response =
             await fetch(
-              `/api/bookings?customerId=${encodeURIComponent(
-                customerId
-              )}`
+              "/api/bookings",
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              }
             );
 
 
@@ -99,7 +117,11 @@ export const useBookingStore =
 
           set({
             bookings:
-              data.bookings,
+              Array.isArray(
+                data.bookings
+              )
+                ? data.bookings
+                : [],
           });
 
         } catch (error) {

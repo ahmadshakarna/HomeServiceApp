@@ -3,7 +3,7 @@ import {
 } from "@/store/booking-details-store";
 
 import {
-  useUser,
+  useAuth,
 } from "@clerk/expo";
 
 import {
@@ -17,6 +17,8 @@ import {
 
 import React, {
   useEffect,
+  useRef,
+  useState,
 } from "react";
 
 import {
@@ -25,6 +27,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
@@ -37,15 +40,90 @@ import {
 } from "react-i18next";
 
 
+type BookingReview = {
+  id: string;
+  bookingId: string;
+  providerId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
+
 export default function BookingDetailsScreen() {
   const {
-    user,
-  } = useUser();
+    getToken,
+    isLoaded,
+    userId,
+  } = useAuth();
+
+
+  const getTokenRef =
+    useRef(
+      getToken
+    );
+
+
+  useEffect(() => {
+    getTokenRef.current =
+      getToken;
+  }, [
+    getToken,
+  ]);
+
 
   const {
     t,
     i18n,
   } = useTranslation();
+
+
+  const [
+    review,
+    setReview,
+  ] = useState<
+    BookingReview | null
+  >(null);
+
+
+  const [
+    rating,
+    setRating,
+  ] = useState(
+    0
+  );
+
+
+  const [
+    reviewComment,
+    setReviewComment,
+  ] = useState(
+    ""
+  );
+
+
+  const [
+    isLoadingReview,
+    setIsLoadingReview,
+  ] = useState(
+    false
+  );
+
+
+  const [
+    isSubmittingReview,
+    setIsSubmittingReview,
+  ] = useState(
+    false
+  );
+
+
+  const [
+    reviewError,
+    setReviewError,
+  ] = useState<
+    string | null
+  >(null);
 
 
   // ========================================
@@ -146,29 +224,333 @@ export default function BookingDetailsScreen() {
 
   useEffect(() => {
     if (
-      !bookingId ||
-      !user?.id
+      !isLoaded ||
+      !userId ||
+      !bookingId
     ) {
       return;
     }
 
 
-    loadBooking(
-      bookingId,
-      user.id
-    );
+    let cancelled =
+      false;
+
+
+    const run =
+      async () => {
+        const token =
+          await getTokenRef.current();
+
+
+        if (
+          cancelled ||
+          !token
+        ) {
+          return;
+        }
+
+
+        await loadBooking(
+          bookingId,
+          token
+        );
+      };
+
+
+    run();
 
 
     return () => {
-      clearBooking();
+      cancelled =
+        true;
     };
 
   }, [
+    isLoaded,
+    userId,
     bookingId,
-    user?.id,
     loadBooking,
+  ]);
+
+
+  useEffect(() => {
+    return () => {
+      clearBooking();
+    };
+  }, [
     clearBooking,
   ]);
+
+
+  // ========================================
+  // LOAD REVIEW
+  // ========================================
+
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      !userId ||
+      !bookingId ||
+      booking?.booking.status !==
+        "completed"
+    ) {
+      setReview(
+        null
+      );
+
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    const run =
+      async () => {
+        try {
+          setIsLoadingReview(
+            true
+          );
+
+          setReviewError(
+            null
+          );
+
+
+          const token =
+            await getTokenRef.current();
+
+
+          if (
+            cancelled ||
+            !token
+          ) {
+            return;
+          }
+
+
+          const response =
+            await fetch(
+              `/api/reviews?bookingId=${encodeURIComponent(
+                bookingId
+              )}`,
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              data.error ||
+                "Failed to load review"
+            );
+          }
+
+
+          if (
+            cancelled
+          ) {
+            return;
+          }
+
+
+          setReview(
+            data.review ??
+              null
+          );
+
+        } catch (error) {
+          console.error(
+            "LOAD REVIEW ERROR:",
+            error
+          );
+
+
+          if (
+            !cancelled
+          ) {
+            setReviewError(
+              isArabic
+                ? "تعذر تحميل التقييم."
+                : "Failed to load review."
+            );
+          }
+
+        } finally {
+          if (
+            !cancelled
+          ) {
+            setIsLoadingReview(
+              false
+            );
+          }
+        }
+      };
+
+
+    run();
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    isLoaded,
+    userId,
+    bookingId,
+    booking?.booking.status,
+    isArabic,
+  ]);
+
+
+  // ========================================
+  // SUBMIT REVIEW
+  // ========================================
+
+  const handleSubmitReview =
+    async () => {
+      if (
+        !bookingId ||
+        rating < 1 ||
+        rating > 5
+      ) {
+        setReviewError(
+          isArabic
+            ? "اختر عدد النجوم أولًا."
+            : "Please select a star rating."
+        );
+
+        return;
+      }
+
+
+      try {
+        setIsSubmittingReview(
+          true
+        );
+
+        setReviewError(
+          null
+        );
+
+
+        const token =
+          await getTokenRef.current();
+
+
+        if (!token) {
+          throw new Error(
+            "Authentication required"
+          );
+        }
+
+
+        const response =
+          await fetch(
+            "/api/reviews",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  bookingId,
+                  rating,
+
+                  comment:
+                    reviewComment.trim() ||
+                    null,
+                }),
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            data.error ||
+              "Failed to submit review"
+          );
+        }
+
+
+        setReview(
+          data.review
+        );
+
+      } catch (error) {
+        console.error(
+          "SUBMIT REVIEW ERROR:",
+          error
+        );
+
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "";
+
+
+        if (
+          message ===
+          "This booking has already been reviewed"
+        ) {
+          setReviewError(
+            isArabic
+              ? "تم تقييم هذا الحجز مسبقًا."
+              : "This booking has already been reviewed."
+          );
+
+        } else if (
+          message ===
+          "Only completed bookings can be reviewed"
+        ) {
+          setReviewError(
+            isArabic
+              ? "يمكن التقييم بعد اكتمال الخدمة فقط."
+              : "You can review only after the service is completed."
+          );
+
+        } else {
+          setReviewError(
+            isArabic
+              ? "تعذر إرسال التقييم. حاول مرة أخرى."
+              : "Failed to submit review. Please try again."
+          );
+        }
+
+      } finally {
+        setIsSubmittingReview(
+          false
+        );
+      }
+    };
 
 
   // ========================================
@@ -436,10 +818,7 @@ export default function BookingDetailsScreen() {
 
   const handleCancel =
     () => {
-      if (
-        !bookingId ||
-        !user?.id
-      ) {
+      if (!bookingId) {
         return;
       }
 
@@ -475,10 +854,19 @@ export default function BookingDetailsScreen() {
 
             onPress:
               async () => {
+                const token =
+                  await getTokenRef.current();
+
+
+                if (!token) {
+                  return;
+                }
+
+
                 const success =
                   await cancelBooking(
                     bookingId,
-                    user.id
+                    token
                   );
 
 
@@ -601,16 +989,25 @@ export default function BookingDetailsScreen() {
 
 
           <Pressable
-            onPress={() => {
-              if (
-                bookingId &&
-                user?.id
-              ) {
-                loadBooking(
-                  bookingId,
-                  user.id
-                );
+            onPress={async () => {
+              if (!bookingId) {
+                return;
               }
+
+
+              const token =
+                await getTokenRef.current();
+
+
+              if (!token) {
+                return;
+              }
+
+
+              await loadBooking(
+                bookingId,
+                token
+              );
             }}
             className="mt-5 rounded-xl bg-[#2563EB] px-6 py-3"
           >
@@ -1162,6 +1559,282 @@ export default function BookingDetailsScreen() {
                   .notes
               }
             </Text>
+
+          </View>
+
+        ) : null}
+
+
+        {/* ==================================
+            REVIEW
+        ================================== */}
+
+        {booking.booking.status ===
+        "completed" ? (
+
+          <View className="mt-5 rounded-2xl bg-white p-5">
+
+            <Text
+              className="text-lg font-bold text-[#0F172A]"
+              style={
+                textDirection
+              }
+            >
+              {
+                isArabic
+                  ? "تقييم الخدمة"
+                  : "Rate the service"
+              }
+            </Text>
+
+
+            {isLoadingReview ? (
+
+              <View className="items-center py-5">
+
+                <ActivityIndicator
+                  size="small"
+                  color="#2563EB"
+                />
+
+              </View>
+
+            ) : review ? (
+
+              <View className="mt-4">
+
+                <Text
+                  className="text-sm font-semibold text-green-600"
+                  style={
+                    textDirection
+                  }
+                >
+                  {
+                    isArabic
+                      ? "تم إرسال تقييمك"
+                      : "Your review has been submitted"
+                  }
+                </Text>
+
+
+                <View
+                  className="mt-3"
+                  style={{
+                    flexDirection:
+                      isArabic
+                        ? "row-reverse"
+                        : "row",
+
+                    gap:
+                      6,
+                  }}
+                >
+
+                  {[
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                  ].map(
+                    (star) => (
+                      <Ionicons
+                        key={
+                          star
+                        }
+                        name={
+                          star <=
+                          review.rating
+                            ? "star"
+                            : "star-outline"
+                        }
+                        size={26}
+                        color="#F59E0B"
+                      />
+                    )
+                  )}
+
+                </View>
+
+
+                {review.comment ? (
+
+                  <Text
+                    className="mt-4 leading-6 text-[#64748B]"
+                    style={
+                      textDirection
+                    }
+                  >
+                    {
+                      review.comment
+                    }
+                  </Text>
+
+                ) : null}
+
+              </View>
+
+            ) : (
+
+              <View className="mt-4">
+
+                <Text
+                  className="text-sm text-[#64748B]"
+                  style={
+                    textDirection
+                  }
+                >
+                  {
+                    isArabic
+                      ? "كيف كانت تجربتك مع مقدم الخدمة؟"
+                      : "How was your experience with the provider?"
+                  }
+                </Text>
+
+
+                <View
+                  className="mt-4"
+                  style={{
+                    flexDirection:
+                      isArabic
+                        ? "row-reverse"
+                        : "row",
+
+                    gap:
+                      10,
+                  }}
+                >
+
+                  {[
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                  ].map(
+                    (star) => (
+                      <Pressable
+                        key={
+                          star
+                        }
+                        onPress={() => {
+                          setRating(
+                            star
+                          );
+
+                          setReviewError(
+                            null
+                          );
+                        }}
+                      >
+
+                        <Ionicons
+                          name={
+                            star <=
+                            rating
+                              ? "star"
+                              : "star-outline"
+                          }
+                          size={34}
+                          color="#F59E0B"
+                        />
+
+                      </Pressable>
+                    )
+                  )}
+
+                </View>
+
+
+                <TextInput
+                  value={
+                    reviewComment
+                  }
+                  onChangeText={
+                    setReviewComment
+                  }
+                  placeholder={
+                    isArabic
+                      ? "اكتب تعليقًا اختياريًا..."
+                      : "Write an optional comment..."
+                  }
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  maxLength={
+                    1000
+                  }
+                  textAlignVertical="top"
+                  className="mt-4 min-h-[100px] rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[#0F172A]"
+                  style={{
+                    textAlign:
+                      isArabic
+                        ? "right"
+                        : "left",
+
+                    writingDirection:
+                      isArabic
+                        ? "rtl"
+                        : "ltr",
+                  }}
+                />
+
+
+                {reviewError ? (
+
+                  <Text
+                    className="mt-3 text-sm font-semibold text-red-600"
+                    style={{
+                      textAlign:
+                        "center",
+                    }}
+                  >
+                    {
+                      reviewError
+                    }
+                  </Text>
+
+                ) : null}
+
+
+                <Pressable
+                  disabled={
+                    rating === 0 ||
+                    isSubmittingReview
+                  }
+                  onPress={
+                    handleSubmitReview
+                  }
+                  className={`mt-4 items-center rounded-xl py-3.5 ${
+                    rating > 0 &&
+                    !isSubmittingReview
+                      ? "bg-[#2563EB]"
+                      : "bg-[#CBD5E1]"
+                  }`}
+                >
+
+                  {isSubmittingReview ? (
+
+                    <ActivityIndicator
+                      size="small"
+                      color="white"
+                    />
+
+                  ) : (
+
+                    <Text className="font-bold text-white">
+                      {
+                        isArabic
+                          ? "إرسال التقييم"
+                          : "Submit Review"
+                      }
+                    </Text>
+
+                  )}
+
+                </Pressable>
+
+              </View>
+            )}
 
           </View>
 

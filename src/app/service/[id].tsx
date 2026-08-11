@@ -17,6 +17,8 @@ import {
 
 import React, {
   useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import {
@@ -36,6 +38,12 @@ import {
 } from "react-i18next";
 
 
+type ProviderRatingSummary = {
+  averageRating: number;
+  reviewCount: number;
+};
+
+
 export default function ServiceDetailsScreen() {
   const {
     t,
@@ -43,12 +51,26 @@ export default function ServiceDetailsScreen() {
   } = useTranslation();
 
 
+  const [
+    providerRatings,
+    setProviderRatings,
+  ] = useState<
+    Record<
+      string,
+      ProviderRatingSummary
+    >
+  >({});
+
+
   // ========================================
   // LANGUAGE
   // ========================================
 
   const isArabic =
-    i18n.language === "ar";
+    (
+      i18n.resolvedLanguage ||
+      i18n.language
+    ).startsWith("ar");
 
 
   // ========================================
@@ -147,6 +169,22 @@ export default function ServiceDetailsScreen() {
     );
 
 
+  const providerIdsKey =
+    useMemo(
+      () =>
+        providers
+          .map(
+            (item) =>
+              item.provider.id
+          )
+          .sort()
+          .join(","),
+      [
+        providers,
+      ]
+    );
+
+
   // ========================================
   // LOAD
   // ========================================
@@ -176,6 +214,148 @@ export default function ServiceDetailsScreen() {
     loadProviders,
     clearService,
     clearProviders,
+  ]);
+
+
+  // ========================================
+  // LOAD PROVIDER RATINGS
+  // ========================================
+
+  useEffect(() => {
+    if (
+      providers.length ===
+      0
+    ) {
+      setProviderRatings(
+        {}
+      );
+
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    const run =
+      async () => {
+        try {
+          const results =
+            await Promise.all(
+              providers.map(
+                async (
+                  item
+                ) => {
+                  const providerId =
+                    item.provider.id;
+
+
+                  const response =
+                    await fetch(
+                      `/api/reviews?providerId=${encodeURIComponent(
+                        providerId
+                      )}`
+                    );
+
+
+                  const data =
+                    await response.json();
+
+
+                  if (
+                    !response.ok
+                  ) {
+                    throw new Error(
+                      data.error ||
+                        "Failed to load provider rating"
+                    );
+                  }
+
+
+                  return {
+                    providerId,
+
+                    averageRating:
+                      Number(
+                        data.summary
+                          ?.averageRating ??
+                          0
+                      ),
+
+                    reviewCount:
+                      Number(
+                        data.summary
+                          ?.reviewCount ??
+                          0
+                      ),
+                  };
+                }
+              )
+            );
+
+
+          if (cancelled) {
+            return;
+          }
+
+
+          const next:
+            Record<
+              string,
+              ProviderRatingSummary
+            > = {};
+
+
+          for (
+            const item
+            of results
+          ) {
+            next[
+              item.providerId
+            ] = {
+              averageRating:
+                item.averageRating,
+
+              reviewCount:
+                item.reviewCount,
+            };
+          }
+
+
+          setProviderRatings(
+            next
+          );
+
+        } catch (error) {
+          console.error(
+            "LOAD PROVIDER RATINGS ERROR:",
+            error
+          );
+
+
+          if (
+            !cancelled
+          ) {
+            setProviderRatings(
+              {}
+            );
+          }
+        }
+      };
+
+
+    run();
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    providerIdsKey,
+    providers,
   ]);
 
 
@@ -966,6 +1146,18 @@ export default function ServiceDetailsScreen() {
                   100;
 
 
+                const ratingSummary =
+                  providerRatings[
+                    item.provider.id
+                  ] ?? {
+                    averageRating:
+                      0,
+
+                    reviewCount:
+                      0,
+                  };
+
+
                 return (
                   <View
                     key={
@@ -1164,6 +1356,75 @@ export default function ServiceDetailsScreen() {
                       </Text>
 
                     ) : null}
+
+
+                    {/* =========================
+                        RATING
+                    ========================= */}
+
+                    <View
+                      className="mt-4"
+                      style={{
+                        flexDirection:
+                          isArabic
+                            ? "row-reverse"
+                            : "row",
+
+                        alignItems:
+                          "center",
+                      }}
+                    >
+
+                      <Ionicons
+                        name="star"
+                        size={18}
+                        color="#F59E0B"
+                      />
+
+
+                      <Text
+                        className="font-bold text-[#0F172A]"
+                        style={{
+                          marginStart:
+                            6,
+
+                          writingDirection:
+                            "ltr",
+                        }}
+                      >
+                        {
+                          ratingSummary
+                            .reviewCount >
+                          0
+                            ? ratingSummary
+                                .averageRating
+                                .toFixed(
+                                  1
+                                )
+                            : "—"
+                        }
+                      </Text>
+
+
+                      <Text
+                        className="text-sm text-[#64748B]"
+                        style={{
+                          marginStart:
+                            5,
+                        }}
+                      >
+                        {
+                          ratingSummary
+                            .reviewCount >
+                          0
+                            ? `(${ratingSummary.reviewCount})`
+                            : isArabic
+                              ? "(بدون تقييمات)"
+                              : "(No reviews)"
+                        }
+                      </Text>
+
+                    </View>
 
 
                     {/* =========================

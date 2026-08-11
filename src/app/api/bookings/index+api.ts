@@ -88,7 +88,7 @@ export async function POST(
 
 
 // ========================================
-// GET MY BOOKINGS
+// GET BOOKINGS / BOOKED TIME SLOTS
 // ========================================
 
 export async function GET(
@@ -102,12 +102,64 @@ export async function GET(
     );
 
 
-    // لا نقبل customerId من query
+    // يجب أن يكون المستخدم مسجل دخول
+    // سواء لجلب حجوزاته أو لمعرفة
+    // الأوقات المحجوزة عند مقدم الخدمة.
     const customerId =
       await requireUserId(
         request
       );
 
+
+    const url =
+      new URL(
+        request.url
+      );
+
+
+    const providerId =
+      url.searchParams.get(
+        "providerId"
+      );
+
+
+    const bookingDate =
+      url.searchParams.get(
+        "bookingDate"
+      );
+
+
+    // =====================================
+    // PROVIDER BOOKED TIME SLOTS
+    // =====================================
+
+    if (
+      providerId &&
+      bookingDate
+    ) {
+      const {
+        listProviderBookedTimeSlots,
+      } = await import(
+        "@/lib/server/booking-actions"
+      );
+
+
+      const bookedTimes =
+        await listProviderBookedTimeSlots(
+          providerId,
+          bookingDate
+        );
+
+
+      return Response.json({
+        bookedTimes,
+      });
+    }
+
+
+    // =====================================
+    // MY BOOKINGS
+    // =====================================
 
     const {
       listCustomerBookings,

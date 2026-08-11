@@ -7,7 +7,7 @@ import {
 } from "@expo/vector-icons";
 
 import {
-  useUser,
+  useAuth,
 } from "@clerk/expo";
 
 import {
@@ -18,6 +18,7 @@ import {
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -46,8 +47,24 @@ export default function BookingScreen() {
   } = useTranslation();
 
   const {
-    user,
-  } = useUser();
+    getToken,
+    isLoaded,
+    userId,
+  } = useAuth();
+
+
+  const getTokenRef =
+    useRef(
+      getToken
+    );
+
+
+  useEffect(() => {
+    getTokenRef.current =
+      getToken;
+  }, [
+    getToken,
+  ]);
 
 
   // ========================================
@@ -196,6 +213,22 @@ export default function BookingScreen() {
   >(null);
 
 
+  const [
+    bookedTimes,
+    setBookedTimes,
+  ] = useState<
+    string[]
+  >([]);
+
+
+  const [
+    isLoadingBookedTimes,
+    setIsLoadingBookedTimes,
+  ] = useState(
+    false
+  );
+
+
   // ========================================
   // LOAD PROVIDER
   // ========================================
@@ -218,6 +251,150 @@ export default function BookingScreen() {
     providerId,
     loadProvider,
     clearProvider,
+  ]);
+
+
+  // ========================================
+  // LOAD BOOKED TIME SLOTS
+  // ========================================
+
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      !userId ||
+      !providerId ||
+      !selectedDate
+    ) {
+      setBookedTimes(
+        []
+      );
+
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    const run =
+      async () => {
+        try {
+          setIsLoadingBookedTimes(
+            true
+          );
+
+
+          const token =
+            await getTokenRef.current();
+
+
+          if (
+            cancelled ||
+            !token
+          ) {
+            return;
+          }
+
+
+          const response =
+            await fetch(
+              `/api/bookings?providerId=${encodeURIComponent(
+                providerId
+              )}&bookingDate=${encodeURIComponent(
+                selectedDate
+              )}`,
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              data.error ||
+                "Failed to load booked times"
+            );
+          }
+
+
+          const times =
+            Array.isArray(
+              data.bookedTimes
+            )
+              ? data.bookedTimes
+              : [];
+
+
+          if (cancelled) {
+            return;
+          }
+
+
+          setBookedTimes(
+            times
+          );
+
+
+          setSelectedTime(
+            (current) =>
+              current &&
+              times.includes(
+                current
+              )
+                ? null
+                : current
+          );
+
+        } catch (error) {
+          console.error(
+            "LOAD BOOKED TIMES ERROR:",
+            error
+          );
+
+
+          if (
+            !cancelled
+          ) {
+            setBookedTimes(
+              []
+            );
+          }
+
+        } finally {
+          if (
+            !cancelled
+          ) {
+            setIsLoadingBookedTimes(
+              false
+            );
+          }
+        }
+      };
+
+
+    run();
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    isLoaded,
+    userId,
+    providerId,
+    selectedDate,
   ]);
 
 
@@ -607,7 +784,8 @@ export default function BookingScreen() {
   const handleConfirmBooking =
     async () => {
       if (
-        !user?.id ||
+        !isLoaded ||
+        !userId ||
         !providerId ||
         !selectedServiceId ||
         !selectedDate ||
@@ -628,6 +806,17 @@ export default function BookingScreen() {
         );
 
 
+        const token =
+          await getTokenRef.current();
+
+
+        if (!token) {
+          throw new Error(
+            "Authentication required"
+          );
+        }
+
+
         const response =
           await fetch(
             "/api/bookings",
@@ -638,13 +827,13 @@ export default function BookingScreen() {
               headers: {
                 "Content-Type":
                   "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
               },
 
               body:
                 JSON.stringify({
-                  customerId:
-                    user.id,
-
                   providerId,
 
                   serviceId:
@@ -660,7 +849,8 @@ export default function BookingScreen() {
                     address.trim(),
 
                   notes:
-                    notes.trim(),
+                    notes.trim() ||
+                    null,
                 }),
             }
           );
@@ -677,6 +867,7 @@ export default function BookingScreen() {
             "BOOKING API ERROR:",
             data
           );
+
 
           throw new Error(
             data.error ||
@@ -700,6 +891,26 @@ export default function BookingScreen() {
           "BOOKING ERROR:",
           error
         );
+
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "";
+
+
+        if (
+          message ===
+          "This time slot is already booked"
+        ) {
+          setSubmitError(
+            isArabic
+              ? "هذا الموعد محجوز بالفعل، اختر وقتًا آخر."
+              : "This time slot is already booked. Please choose another time."
+          );
+
+          return;
+        }
 
 
         setSubmitError(
@@ -1321,15 +1532,26 @@ export default function BookingScreen() {
 
                 {timeSlots.map(
                   (time) => {
+                    const booked =
+                      bookedTimes.includes(
+                        time
+                      );
+
+
                     const selected =
+                      !booked &&
                       selectedTime ===
-                      time;
+                        time;
 
 
                     return (
                       <Pressable
                         key={
                           time
+                        }
+                        disabled={
+                          booked ||
+                          isLoadingBookedTimes
                         }
                         onPress={() => {
                           setSelectedTime(
@@ -1340,10 +1562,16 @@ export default function BookingScreen() {
                             null
                           );
                         }}
-                        className={`mb-3 rounded-xl border px-4 py-3 ${
-                          selected
-                            ? "border-[#2563EB] bg-[#2563EB]"
-                            : "border-[#E2E8F0] bg-white"
+                        className={`mb-3 min-w-[72px] items-center rounded-xl border px-4 py-3 ${
+                          booked
+                            ? "border-[#E2E8F0] bg-[#F1F5F9]"
+                            : selected
+                              ? "border-[#2563EB] bg-[#2563EB]"
+                              : "border-[#E2E8F0] bg-white"
+                        } ${
+                          isLoadingBookedTimes
+                            ? "opacity-60"
+                            : ""
                         }`}
                         style={{
                           marginEnd:
@@ -1353,9 +1581,11 @@ export default function BookingScreen() {
 
                         <Text
                           className={`font-semibold ${
-                            selected
-                              ? "text-white"
-                              : "text-[#475569]"
+                            booked
+                              ? "text-[#94A3B8]"
+                              : selected
+                                ? "text-white"
+                                : "text-[#475569]"
                           }`}
                           style={{
                             writingDirection:
@@ -1364,6 +1594,17 @@ export default function BookingScreen() {
                         >
                           {time}
                         </Text>
+
+
+                        {booked ? (
+                          <Text className="mt-1 text-[10px] font-semibold text-[#EF4444]">
+                            {
+                              isArabic
+                                ? "محجوز"
+                                : "Booked"
+                            }
+                          </Text>
+                        ) : null}
 
                       </Pressable>
                     );

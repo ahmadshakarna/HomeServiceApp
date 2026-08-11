@@ -3,7 +3,7 @@ import {
 } from "@/store/booking-store";
 
 import {
-  useUser,
+  useAuth,
 } from "@clerk/expo";
 
 import {
@@ -17,6 +17,8 @@ import {
 
 import React, {
   useCallback,
+  useEffect,
+  useRef,
 } from "react";
 
 import {
@@ -38,8 +40,25 @@ import {
 
 export default function BookingsScreen() {
   const {
-    user,
-  } = useUser();
+    getToken,
+    isLoaded,
+    userId,
+  } = useAuth();
+
+
+  const getTokenRef =
+    useRef(
+      getToken
+    );
+
+
+  useEffect(() => {
+    getTokenRef.current =
+      getToken;
+  }, [
+    getToken,
+  ]);
+
 
   const {
     t,
@@ -102,22 +121,54 @@ export default function BookingsScreen() {
 
 
   // ========================================
-  // LOAD
+  // AUTHENTICATED LOAD
+  // ========================================
+
+  const refreshBookings =
+    useCallback(
+      async () => {
+        if (
+          !isLoaded ||
+          !userId
+        ) {
+          return;
+        }
+
+
+        const token =
+          await getTokenRef.current();
+
+
+        if (!token) {
+          console.error(
+            "LOAD BOOKINGS ERROR: Missing Clerk token"
+          );
+
+          return;
+        }
+
+
+        await loadBookings(
+          token
+        );
+      },
+      [
+        isLoaded,
+        userId,
+        loadBookings,
+      ]
+    );
+
+
+  // ========================================
+  // LOAD ON FOCUS
   // ========================================
 
   useFocusEffect(
     useCallback(() => {
-      if (!user?.id) {
-        return;
-      }
-
-      loadBookings(
-        user.id
-      );
-
+      refreshBookings();
     }, [
-      user?.id,
-      loadBookings,
+      refreshBookings,
     ])
   );
 
@@ -379,15 +430,9 @@ export default function BookingsScreen() {
           isLoading
         }
 
-        onRefresh={() => {
-          if (
-            user?.id
-          ) {
-            loadBookings(
-              user.id
-            );
-          }
-        }}
+        onRefresh={
+          refreshBookings
+        }
 
         contentContainerStyle={{
           paddingHorizontal:
@@ -496,15 +541,9 @@ export default function BookingsScreen() {
 
 
               <Pressable
-                onPress={() => {
-                  if (
-                    user?.id
-                  ) {
-                    loadBookings(
-                      user.id
-                    );
-                  }
-                }}
+                onPress={
+                  refreshBookings
+                }
                 className="mt-5 rounded-xl bg-[#2563EB] px-5 py-3"
               >
 
@@ -598,9 +637,7 @@ export default function BookingsScreen() {
               className="mb-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 active:opacity-80"
             >
 
-              {/* =============================
-                  STATUS + ARROW
-              ============================= */}
+              {/* STATUS + ARROW */}
 
               <View
                 style={{
@@ -667,9 +704,7 @@ export default function BookingsScreen() {
               </View>
 
 
-              {/* =============================
-                  SERVICE
-              ============================= */}
+              {/* SERVICE */}
 
               <View
                 className="mt-4"
@@ -755,9 +790,7 @@ export default function BookingsScreen() {
               <View className="my-4 h-[1px] bg-[#E2E8F0]" />
 
 
-              {/* =============================
-                  PROVIDER
-              ============================= */}
+              {/* PROVIDER */}
 
               <View
                 style={{
@@ -812,9 +845,7 @@ export default function BookingsScreen() {
               </View>
 
 
-              {/* =============================
-                  DATE
-              ============================= */}
+              {/* DATE */}
 
               <View
                 className="mt-3"
@@ -859,9 +890,7 @@ export default function BookingsScreen() {
               </View>
 
 
-              {/* =============================
-                  ADDRESS
-              ============================= */}
+              {/* ADDRESS */}
 
               <View
                 className="mt-3"

@@ -13,6 +13,7 @@ import {
 
 import React, {
   useEffect,
+  useState,
 } from "react";
 
 import {
@@ -40,12 +41,31 @@ export default function ProviderDetailsScreen() {
   } = useTranslation();
 
 
+  const [
+    averageRating,
+    setAverageRating,
+  ] = useState(
+    0
+  );
+
+
+  const [
+    reviewCount,
+    setReviewCount,
+  ] = useState(
+    0
+  );
+
+
   // ========================================
   // LANGUAGE
   // ========================================
 
   const isArabic =
-    i18n.language === "ar";
+    (
+      i18n.resolvedLanguage ||
+      i18n.language
+    ).startsWith("ar");
 
 
   const textDirection = {
@@ -145,6 +165,102 @@ export default function ProviderDetailsScreen() {
     providerId,
     loadProvider,
     clearProvider,
+  ]);
+
+
+  // ========================================
+  // LOAD REVIEW SUMMARY
+  // ========================================
+
+  useEffect(() => {
+    if (!providerId) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    const run =
+      async () => {
+        try {
+          const response =
+            await fetch(
+              `/api/reviews?providerId=${encodeURIComponent(
+                providerId
+              )}`
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              data.error ||
+                "Failed to load rating"
+            );
+          }
+
+
+          if (cancelled) {
+            return;
+          }
+
+
+          setAverageRating(
+            Number(
+              data.summary
+                ?.averageRating ??
+                0
+            )
+          );
+
+
+          setReviewCount(
+            Number(
+              data.summary
+                ?.reviewCount ??
+                0
+            )
+          );
+
+        } catch (error) {
+          console.error(
+            "LOAD PROVIDER RATING ERROR:",
+            error
+          );
+
+
+          if (
+            !cancelled
+          ) {
+            setAverageRating(
+              0
+            );
+
+            setReviewCount(
+              0
+            );
+          }
+        }
+      };
+
+
+    run();
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    providerId,
   ]);
 
 
@@ -586,6 +702,74 @@ export default function ProviderDetailsScreen() {
                 {t(
                   "providerProfile.yearsExperience"
                 )}
+              </Text>
+
+            </View>
+
+
+            <View className="h-12 w-[1px] bg-[#E2E8F0]" />
+
+
+            {/* RATING */}
+
+            <View className="items-center px-5">
+
+              <View
+                style={{
+                  flexDirection:
+                    "row",
+
+                  alignItems:
+                    "center",
+
+                  gap:
+                    4,
+                }}
+              >
+
+                <Ionicons
+                  name="star"
+                  size={18}
+                  color="#F59E0B"
+                />
+
+
+                <Text className="text-xl font-bold text-[#0F172A]">
+                  {
+                    reviewCount >
+                    0
+                      ? averageRating.toFixed(
+                          1
+                        )
+                      : "—"
+                  }
+                </Text>
+
+              </View>
+
+
+              <Text
+                className="mt-1 text-xs text-[#64748B]"
+                style={{
+                  textAlign:
+                    "center",
+                }}
+              >
+                {
+                  reviewCount >
+                  0
+                    ? isArabic
+                      ? `${reviewCount} تقييم`
+                      : `${reviewCount} review${
+                          reviewCount ===
+                          1
+                            ? ""
+                            : "s"
+                        }`
+                    : isArabic
+                      ? "بدون تقييمات"
+                      : "No reviews"
+                }
               </Text>
 
             </View>

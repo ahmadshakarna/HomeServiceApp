@@ -4,161 +4,264 @@ import {
 
 import { create } from "zustand";
 
+
 type BookingDetailsStore = {
-  booking: CustomerBooking | null;
+  booking:
+    CustomerBooking | null;
 
-  isLoading: boolean;
-  isCancelling: boolean;
+  isLoading:
+    boolean;
 
-  error: string | null;
+  isCancelling:
+    boolean;
+
+  error:
+    string | null;
+
 
   loadBooking: (
     bookingId: string,
-    customerId: string
+    token: string
   ) => Promise<void>;
+
 
   cancelBooking: (
     bookingId: string,
-    customerId: string
+    token: string
   ) => Promise<boolean>;
 
-  clearBooking: () => void;
+
+  clearBooking:
+    () => void;
 };
+
 
 export const useBookingDetailsStore =
   create<BookingDetailsStore>(
     (set) => ({
-      booking: null,
+      booking:
+        null,
 
-      isLoading: false,
-      isCancelling: false,
+      isLoading:
+        false,
 
-      error: null,
+      isCancelling:
+        false,
 
-      loadBooking: async (
-        bookingId,
-        customerId
-      ) => {
-        set({
-          isLoading: true,
-          error: null,
-        });
+      error:
+        null,
 
-        try {
-          const response =
-            await fetch(
-              `/api/bookings/${bookingId}?customerId=${encodeURIComponent(
-                customerId
-              )}`
-            );
 
-          const data =
-            await response.json();
+      // ========================================
+      // LOAD BOOKING DETAILS
+      // ========================================
 
-          if (!response.ok) {
-            throw new Error(
-              data.error ||
-                "Failed to load booking"
-            );
-          }
-
+      loadBooking:
+        async (
+          bookingId,
+          token
+        ) => {
           set({
-            booking:
-              data.booking,
-          });
-        } catch (error) {
-          set({
-            booking: null,
+            isLoading:
+              true,
 
             error:
-              error instanceof Error
-                ? error.message
-                : "Failed to load booking",
+              null,
           });
-        } finally {
-          set({
-            isLoading: false,
-          });
-        }
-      },
 
-      cancelBooking: async (
-        bookingId,
-        customerId
-      ) => {
-        set({
-          isCancelling: true,
-          error: null,
-        });
 
-        try {
-          const response =
-            await fetch(
-              `/api/bookings/${bookingId}`,
-              {
-                method: "PATCH",
+          try {
+            if (
+              !bookingId ||
+              !token
+            ) {
+              throw new Error(
+                "Authentication required"
+              );
+            }
 
-                headers: {
-                  "Content-Type":
-                    "application/json",
-                },
 
-                body: JSON.stringify({
-                  customerId,
-                  action: "cancel",
-                }),
-              }
+            const response =
+              await fetch(
+                `/api/bookings/${bookingId}`,
+                {
+                  headers: {
+                    Authorization:
+                      `Bearer ${token}`,
+                  },
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (
+              !response.ok
+            ) {
+              throw new Error(
+                data.error ||
+                  "Failed to load booking"
+              );
+            }
+
+
+            set({
+              booking:
+                data.booking,
+            });
+
+          } catch (error) {
+            console.error(
+              "LOAD BOOKING DETAILS ERROR:",
+              error
             );
 
-          const data =
-            await response.json();
 
-          if (!response.ok) {
-            throw new Error(
-              data.error ||
-                "Failed to cancel booking"
-            );
+            set({
+              booking:
+                null,
+
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to load booking",
+            });
+
+          } finally {
+            set({
+              isLoading:
+                false,
+            });
           }
+        },
 
-          set((state) => ({
-            booking:
-              state.booking
-                ? {
-                    ...state.booking,
 
-                    booking: {
-                      ...state.booking
-                        .booking,
+      // ========================================
+      // CANCEL BOOKING
+      // ========================================
 
-                      status:
-                        "cancelled",
-                    },
-                  }
-                : null,
-          }));
-
-          return true;
-        } catch (error) {
+      cancelBooking:
+        async (
+          bookingId,
+          token
+        ) => {
           set({
+            isCancelling:
+              true,
+
             error:
-              error instanceof Error
-                ? error.message
-                : "Failed to cancel booking",
+              null,
           });
 
-          return false;
-        } finally {
+
+          try {
+            if (
+              !bookingId ||
+              !token
+            ) {
+              throw new Error(
+                "Authentication required"
+              );
+            }
+
+
+            const response =
+              await fetch(
+                `/api/bookings/${bookingId}`,
+                {
+                  method:
+                    "PATCH",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+
+                    Authorization:
+                      `Bearer ${token}`,
+                  },
+
+                  body:
+                    JSON.stringify({
+                      action:
+                        "cancel",
+                    }),
+                }
+              );
+
+
+            const data =
+              await response.json();
+
+
+            if (
+              !response.ok
+            ) {
+              throw new Error(
+                data.error ||
+                  "Failed to cancel booking"
+              );
+            }
+
+
+            set(
+              (state) => ({
+                booking:
+                  state.booking
+                    ? {
+                        ...state.booking,
+
+                        booking: {
+                          ...state.booking
+                            .booking,
+
+                          status:
+                            "cancelled",
+                        },
+                      }
+                    : null,
+              })
+            );
+
+
+            return true;
+
+          } catch (error) {
+            console.error(
+              "CANCEL BOOKING ERROR:",
+              error
+            );
+
+
+            set({
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to cancel booking",
+            });
+
+
+            return false;
+
+          } finally {
+            set({
+              isCancelling:
+                false,
+            });
+          }
+        },
+
+
+      clearBooking:
+        () => {
           set({
-            isCancelling: false,
-          });
-        }
-      },
+            booking:
+              null,
 
-      clearBooking: () => {
-        set({
-          booking: null,
-          error: null,
-        });
-      },
+            error:
+              null,
+          });
+        },
     })
   );
