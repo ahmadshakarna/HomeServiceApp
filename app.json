@@ -24,24 +24,36 @@
       "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
-        }
-      ],
-      "@clerk/expo",
-      "expo-secure-store",
-      "expo-web-browser",
-      "expo-localization"
-    ],
+   "plugins": [
+  [
+    "expo-router",
+    {
+      "origin": "https://homeservice.expo.app"
+    }
+  ],
+  [
+    "expo-splash-screen",
+    {
+      "backgroundColor": "#208AEF",
+      "image": "./assets/images/splash-icon.png",
+      "imageWidth": 76
+    }
+  ],
+  "@clerk/expo",
+  "expo-secure-store",
+  "expo-web-browser",
+  "expo-localization"
+],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "72cae1f8-0baf-47b1-be6c-97db9de3f7ea"
+      }
+    },
+    "owner": "ahmad_sh"
   }
 }
